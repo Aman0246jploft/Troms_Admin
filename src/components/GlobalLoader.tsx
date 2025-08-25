@@ -7,7 +7,7 @@ export default function GlobalLoader({ loading = false }: { loading?: boolean })
 
   return (
     <motion.div
-      className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50"
+      className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-[9999999]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
