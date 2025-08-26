@@ -20,8 +20,8 @@ const nextConfig: NextConfig = {
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
-      issuer: /\.[jt]sx?$/, // only from your TS/JS files
-      exclude: /node_modules/, // prevent messing with lucide-react
+      issuer: /\.[jt]sx?$/, 
+      exclude: /node_modules/, 
       use: ["@svgr/webpack"],
     });
     return config;
