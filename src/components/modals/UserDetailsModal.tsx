@@ -2,7 +2,8 @@
 import React from "react";
 import {Modal} from "../ui/modal";
 import Badge from "../ui/badge/Badge";
-import { CloseIcon } from "../../icons";
+import { X as CloseIcon } from "lucide-react";
+
 
 interface User {
   id: string;

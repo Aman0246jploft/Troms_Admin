@@ -4,21 +4,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
+import { MoreHorizontal } from "lucide-react";
+import { 
+  Grid, 
+  User, 
+  FileText, 
+  LogOut, 
+  Box, 
+  PieChart, 
+  Archive, 
 
-import {
-  BoxCubeIcon,
-  CalenderIcon,
-  ChevronDownIcon,
-  GridIcon,
-  HorizontaLDots,
-  ListIcon,
-  PageIcon,
-  PieChartIcon,
-  PlugInIcon,
-  TableIcon,
-  UserCircleIcon,
-  DocsIcon,
-} from "../icons/index";
+  ChevronDown 
+} from "lucide-react";
 
 type NavItem = {
   name: string;
@@ -47,33 +44,34 @@ const useAuth = () => {
 };
 
 // Static items that don't need to be recreated
+
 const othersItems: NavItem[] = [
   {
-    icon: <PieChartIcon />,
+    icon: <PieChart size={20} />, // Charts
     name: "Charts",
     subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
+      { name: "Line Chart", path: "/line-chart" },
+      { name: "Bar Chart", path: "/bar-chart" },
     ],
   },
   {
-    icon: <BoxCubeIcon />,
+    icon: <Box size={20} />, // UI Elements
     name: "UI Elements",
     subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
+      { name: "Alerts", path: "/alerts" },
+      { name: "Avatar", path: "/avatars" },
+      { name: "Badge", path: "/badge" },
+      { name: "Buttons", path: "/buttons" },
+      { name: "Images", path: "/images" },
+      { name: "Videos", path: "/videos" },
     ],
   },
   {
-    icon: <PlugInIcon />,
+    icon: <Archive size={20} />, // Authentication
     name: "Authentication",
     subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
+      { name: "Sign In", path: "/signin" },
+      { name: "Sign Up", path: "/signup" },
     ],
   },
 ];
@@ -85,32 +83,59 @@ const AppSidebar: React.FC = () => {
   const router = useRouter();
 
   // Create navItems outside of useMemo to avoid signOut dependency issues
+  // const navItems: NavItem[] = [
+  //   {
+  //     icon: <GridIcon />,
+  //     name: "Dashboard",
+  //     path: "/",
+  //   },
+  //   {
+  //     icon: <UserCircleIcon />,
+  //     name: "User Management",
+  //     path: "/userManagement",
+  //   },
+  //   {
+  //     icon: <DocsIcon />,
+  //     name: "Content Management",
+  //     path: "/terms-and-conditions", 
+  //     subItems: [
+  //       { name: "Terms and Conditions", path: "/terms-and-conditions", pro: false },
+  //       { name: "Privacy Policy", path: "/privacy-policy", pro: false },
+  //     ],
+  //   },
+  //   {
+  //     icon: <UserCircleIcon />,
+  //     name: "Sign Out",
+  //     action: signOut,
+  //   },
+  // ];
+
   const navItems: NavItem[] = [
-    {
-      icon: <GridIcon />,
-      name: "Dashboard",
-      path: "/",
-    },
-    {
-      icon: <UserCircleIcon />,
-      name: "User Management",
-      path: "/userManagement",
-    },
-    {
-      icon: <DocsIcon />,
-      name: "Content Management",
-      path: "/terms-and-conditions", 
-      subItems: [
-        { name: "Terms and Conditions", path: "/terms-and-conditions", pro: false },
-        { name: "Privacy Policy", path: "/privacy-policy", pro: false },
-      ],
-    },
-    {
-      icon: <UserCircleIcon />,
-      name: "Sign Out",
-      action: signOut,
-    },
-  ];
+  {
+    icon: <Grid size={20} />, // Dashboard
+    name: "Dashboard",
+    path: "/",
+  },
+  {
+    icon: <User size={20} />, // User Management
+    name: "User Management",
+    path: "/userManagement",
+  },
+  {
+    icon: <FileText size={20} />, // Content Management
+    name: "Content Management",
+    path: "/terms-and-conditions",
+    subItems: [
+      { name: "Terms and Conditions", path: "/terms-and-conditions" },
+      { name: "Privacy Policy", path: "/privacy-policy" },
+    ],
+  },
+  {
+    icon: <LogOut size={20} />, // Sign Out
+    name: "Sign Out",
+    action: signOut,
+  },
+];
 
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
@@ -172,7 +197,7 @@ const AppSidebar: React.FC = () => {
                   <span className="menu-item-text">{nav.name}</span>
                 )}
                 {(isExpanded || isHovered || isMobileOpen) && (
-                  <ChevronDownIcon
+                  <ChevronDown
                     className={`ml-auto w-5 h-5 transition-transform duration-200 ${
                       openSubmenu?.type === menuType && openSubmenu?.index === index
                         ? "rotate-180 text-brand-500"
@@ -401,7 +426,7 @@ const AppSidebar: React.FC = () => {
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Menu"
                 ) : (
-                  <HorizontaLDots />
+                  <MoreHorizontal  />
                 )}
               </h2>
               {renderMenuItems(navItems, "main")}

@@ -20,12 +20,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${outfit.className} dark:bg-gray-900`}> 
-        <ThemeProvider>
-          <SidebarProvider>
-            <Provider store={store}>{children}</Provider>
-             <Toaster />
-          </SidebarProvider>
-        </ThemeProvider>
+        <Provider store={store}>
+  <ThemeProvider>
+    <SidebarProvider>
+      {children}
+      <Toaster />
+    </SidebarProvider>
+  </ThemeProvider>
+</Provider>
+
       </body>
     </html>
   );

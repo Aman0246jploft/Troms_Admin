@@ -4,7 +4,8 @@ import { ApexOptions } from "apexcharts";
 
 import dynamic from "next/dynamic";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { MoreDotIcon } from "@/icons";
+import { MoreVertical as MoreDotIcon } from "lucide-react";
+
 import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 // Dynamically import the ReactApexChart component
