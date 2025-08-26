@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "@/store/slices/auth";
-import userReducer from '@/store/slices/user'
+import userReducer from '@/store/slices/user';
+import contentManagementReducer from '@/store/slices/contentManagement';
 
 // Custom middleware to log store changes
 const loggerMiddleware = (storeAPI: any) => (next: any) => (action: any) => {
@@ -13,7 +14,8 @@ const loggerMiddleware = (storeAPI: any) => (next: any) => (action: any) => {
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    user: userReducer
+    user: userReducer,
+    contentManagement: contentManagementReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(loggerMiddleware),
