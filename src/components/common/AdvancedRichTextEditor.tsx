@@ -5,6 +5,7 @@ import {
   Bold, 
   Italic, 
   Underline, 
+  Strikethrough,
   AlignLeft, 
   AlignCenter, 
   AlignRight, 
@@ -26,7 +27,20 @@ import {
   Save,
   RotateCcw,
   FileCode2,
-  Palette
+  Palette,
+  Highlighter,
+  Subscript,
+  Superscript,
+  Minus,
+  Indent,
+  Outdent,
+  Table,
+  Copy,
+  Scissors,
+  ClipboardPaste,
+  Search,
+  Replace,
+  ChevronDown
 } from 'lucide-react';
 
 interface AdvancedRichTextEditorProps {
@@ -49,6 +63,8 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
   showPreview = true,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const colorPickerRef = useRef<HTMLInputElement>(null);
+  const highlightColorPickerRef = useRef<HTMLInputElement>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isHtmlMode, setIsHtmlMode] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
@@ -56,6 +72,33 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showFontSizeDropdown, setShowFontSizeDropdown] = useState(false);
+  const [showFontFamilyDropdown, setShowFontFamilyDropdown] = useState(false);
+  const [currentFontSize, setCurrentFontSize] = useState('16px');
+  const [currentFontFamily, setCurrentFontFamily] = useState('Arial');
+
+  // Font sizes and families
+  const fontSizes = [
+    '8px', '9px', '10px', '11px', '12px', '14px', '16px', '18px', '20px', 
+    '24px', '28px', '32px', '36px', '48px', '60px', '72px'
+  ];
+
+  const fontFamilies = [
+    'Arial', 'Arial Black', 'Comic Sans MS', 'Courier New', 'Georgia', 
+    'Helvetica', 'Impact', 'Lucida Console', 'Tahoma', 'Times New Roman', 
+    'Trebuchet MS', 'Verdana', 'system-ui', 'serif', 'sans-serif', 'monospace'
+  ];
+
+  const quickColors = [
+    '#000000', '#444444', '#666666', '#999999', '#cccccc', '#eeeeee', '#f3f3f3', '#ffffff',
+    '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#9900ff', '#ff00ff',
+    '#f4cccc', '#fce5cd', '#fff2cc', '#d9ead3', '#d0e0e3', '#cfe2f3', '#d9d2e9', '#ead1dc',
+    '#ea9999', '#f9cb9c', '#ffe599', '#b6d7a8', '#a2c4c9', '#9fc5e8', '#b4a7d6', '#d5a6bd',
+    '#e06666', '#f6b26b', '#ffd966', '#93c47d', '#76a5af', '#6fa8dc', '#8e7cc3', '#c27ba0',
+    '#cc0000', '#e69138', '#f1c232', '#6aa84f', '#45818e', '#3d85c6', '#674ea7', '#a64d79',
+    '#990000', '#b45f06', '#bf9000', '#38761d', '#134f5c', '#0b5394', '#351c75', '#741b47',
+    '#660000', '#783f04', '#7f6000', '#274e13', '#0c343d', '#073763', '#20124d', '#4c1130'
+  ];
 
   // Initialize editor content
   useEffect(() => {
@@ -63,7 +106,6 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
       if (!value || value.trim() === '') {
         editorRef.current.innerHTML = '';
       } else {
-        // Ensure proper HTML structure
         const htmlValue = value.includes('<') ? value : `<p>${value}</p>`;
         editorRef.current.innerHTML = htmlValue;
       }
@@ -72,7 +114,6 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
     }
   }, [value, isInitialized]);
 
-  // Update content when value changes externally
   useEffect(() => {
     if (editorRef.current && isInitialized && editorRef.current.innerHTML !== value) {
       const htmlValue = value.includes('<') && value.trim() !== '' ? value : (value.trim() !== '' ? `<p>${value}</p>` : '');
@@ -91,7 +132,7 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
     setHistory(prev => {
       const newHistory = prev.slice(0, historyIndex + 1);
       newHistory.push(content);
-      return newHistory.slice(-50); // Keep last 50 states
+      return newHistory.slice(-50);
     });
     setHistoryIndex(prev => Math.min(prev + 1, 49));
   }, [historyIndex]);
@@ -100,7 +141,6 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
     if (editorRef.current) {
       let htmlContent = editorRef.current.innerHTML;
       
-      // Clean up HTML
       htmlContent = htmlContent
         .replace(/<p><br><\/p>/g, '<p></p>')
         .replace(/<p>\s*<\/p>/g, '')
@@ -109,7 +149,6 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
         .replace(/<\/div>/g, '</p>')
         .trim();
 
-      // Ensure content is wrapped properly
       if (htmlContent && !htmlContent.includes('<') && htmlContent.trim() !== '') {
         htmlContent = `<p>${htmlContent}</p>`;
         editorRef.current.innerHTML = htmlContent;
@@ -121,7 +160,6 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
   }, [onChange, updateCounts]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    // Save to history on significant changes
     if (e.key === 'Enter' || (e.ctrlKey && e.key === 's')) {
       if (e.ctrlKey && e.key === 's') {
         e.preventDefault();
@@ -129,7 +167,6 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
       }
     }
 
-    // Handle shortcuts
     if (e.ctrlKey || e.metaKey) {
       switch (e.key) {
         case 'b':
@@ -156,6 +193,21 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
           e.preventDefault();
           redo();
           break;
+        case 'c':
+          if (!e.shiftKey) {
+            handleCopy();
+          }
+          break;
+        case 'x':
+          if (!e.shiftKey) {
+            handleCut();
+          }
+          break;
+        case 'v':
+          if (!e.shiftKey) {
+            handlePaste();
+          }
+          break;
       }
     }
   }, [saveToHistory]);
@@ -164,26 +216,21 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
     if (editorRef.current) {
       editorRef.current.focus();
       
-      // Ensure we have content structure
       if (editorRef.current.innerHTML === '' || editorRef.current.innerHTML === '<br>') {
         editorRef.current.innerHTML = '<p><br></p>';
       }
       
       document.execCommand(command, false, value);
-      
-      // Trigger input handler to update content
       setTimeout(() => handleInput(), 10);
     }
   }, [handleInput]);
 
   const insertHTML = useCallback((html: string) => {
     if (isHtmlMode) {
-      // In HTML mode, insert at cursor position in textarea
       const currentValue = value;
       const newValue = currentValue + html;
       onChange(newValue);
     } else if (editorRef.current) {
-      // In visual mode, use execCommand
       editorRef.current.focus();
       document.execCommand('insertHTML', false, html);
       setTimeout(() => handleInput(), 10);
@@ -214,6 +261,44 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
     }
   }, [history, historyIndex, onChange, updateCounts]);
 
+  const handleColorPick = useCallback((color: string) => {
+    execCommand('foreColor', color);
+  }, [execCommand]);
+
+  const handleHighlightColorPick = useCallback((color: string) => {
+    execCommand('hiliteColor', color);
+  }, [execCommand]);
+
+  const handleFontSizeChange = useCallback((size: string) => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (!range.collapsed) {
+        const span = document.createElement('span');
+        span.style.fontSize = size;
+        try {
+          range.surroundContents(span);
+          setCurrentFontSize(size);
+          setTimeout(() => handleInput(), 10);
+        } catch (e) {
+          execCommand('fontSize', '7');
+          const fontElements = editorRef.current?.querySelectorAll('font[size="7"]');
+          fontElements?.forEach(el => {
+            el.removeAttribute('size');
+            (el as HTMLElement).style.fontSize = size;
+          });
+        }
+      }
+    }
+    setShowFontSizeDropdown(false);
+  }, [execCommand, handleInput]);
+
+  const handleFontFamilyChange = useCallback((family: string) => {
+    execCommand('fontName', family);
+    setCurrentFontFamily(family);
+    setShowFontFamilyDropdown(false);
+  }, [execCommand]);
+
   const handleLinkInsert = useCallback(() => {
     const url = prompt('Enter URL:');
     if (url) {
@@ -230,49 +315,229 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
     }
   }, [insertHTML]);
 
-  const handleColorPicker = useCallback(() => {
-    const color = prompt('Enter color (hex, rgb, or color name):');
-    if (color) {
-      execCommand('foreColor', color);
-    }
-  }, [execCommand]);
-
-  const handleCustomHtml = useCallback(() => {
-    const html = prompt('Enter HTML code:');
-    if (html) {
-      insertHTML(html);
+  const handleTableInsert = useCallback(() => {
+    const rows = parseInt(prompt('Number of rows:') || '2');
+    const cols = parseInt(prompt('Number of columns:') || '2');
+    if (rows && cols) {
+      let tableHTML = '<table border="1" style="border-collapse: collapse; width: 100%;">';
+      for (let i = 0; i < rows; i++) {
+        tableHTML += '<tr>';
+        for (let j = 0; j < cols; j++) {
+          tableHTML += '<td style="padding: 8px; border: 1px solid #ccc;">&nbsp;</td>';
+        }
+        tableHTML += '</tr>';
+      }
+      tableHTML += '</table>';
+      insertHTML(tableHTML);
     }
   }, [insertHTML]);
+
+  const handleCopy = useCallback(() => {
+    document.execCommand('copy');
+  }, []);
+
+  const handleCut = useCallback(() => {
+    document.execCommand('cut');
+    setTimeout(() => handleInput(), 10);
+  }, [handleInput]);
+
+  const handlePaste = useCallback(() => {
+    document.execCommand('paste');
+    setTimeout(() => handleInput(), 10);
+  }, [handleInput]);
+
+  const handleFindReplace = useCallback(() => {
+    const searchText = prompt('Find text:');
+    if (searchText) {
+      const replaceText = prompt('Replace with:');
+      if (replaceText !== null) {
+        const content = editorRef.current?.innerHTML || '';
+        const newContent = content.replace(new RegExp(searchText, 'gi'), replaceText);
+        if (editorRef.current) {
+          editorRef.current.innerHTML = newContent;
+          handleInput();
+        }
+      }
+    }
+  }, [handleInput]);
 
   const formatBlock = useCallback((tag: string) => {
     execCommand('formatBlock', tag);
   }, [execCommand]);
 
   const toolbarButtons = [
-    { icon: Bold, action: () => execCommand('bold'), title: 'Bold (Ctrl+B)', className: 'font-bold' },
-    { icon: Italic, action: () => execCommand('italic'), title: 'Italic (Ctrl+I)', className: 'italic' },
-    { icon: Underline, action: () => execCommand('underline'), title: 'Underline (Ctrl+U)', className: 'underline' },
+    // Font controls
+    { 
+      custom: true, 
+      element: (
+        <div key="font-family" className="relative">
+          <button
+            type="button"
+            onClick={() => setShowFontFamilyDropdown(!showFontFamilyDropdown)}
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+            title="Font Family"
+          >
+            <span className="font-medium" style={{ fontFamily: currentFontFamily }}>
+              {currentFontFamily}
+            </span>
+            <ChevronDown size={14} />
+          </button>
+          {showFontFamilyDropdown && (
+            <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-10 min-w-[160px] max-h-48 overflow-y-auto">
+              {fontFamilies.map((family) => (
+                <button
+                  key={family}
+                  onClick={() => handleFontFamilyChange(family)}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  style={{ fontFamily: family }}
+                >
+                  {family}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    },
+    { 
+      custom: true, 
+      element: (
+        <div key="font-size" className="relative">
+          <button
+            type="button"
+            onClick={() => setShowFontSizeDropdown(!showFontSizeDropdown)}
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+            title="Font Size"
+          >
+            {currentFontSize}
+            <ChevronDown size={14} />
+          </button>
+          {showFontSizeDropdown && (
+            <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+              {fontSizes.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => handleFontSizeChange(size)}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  style={{ fontSize: size }}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    },
     { divider: true },
+    
+    // Text formatting
+    { icon: Bold, action: () => execCommand('bold'), title: 'Bold (Ctrl+B)' },
+    { icon: Italic, action: () => execCommand('italic'), title: 'Italic (Ctrl+I)' },
+    { icon: Underline, action: () => execCommand('underline'), title: 'Underline (Ctrl+U)' },
+    { icon: Strikethrough, action: () => execCommand('strikeThrough'), title: 'Strikethrough' },
+    { icon: Subscript, action: () => execCommand('subscript'), title: 'Subscript' },
+    { icon: Superscript, action: () => execCommand('superscript'), title: 'Superscript' },
+    { divider: true },
+    
+    // Colors
+    { 
+      custom: true, 
+      element: (
+        <div key="text-color" className="relative">
+          <button
+            type="button"
+            onClick={() => colorPickerRef.current?.click()}
+            className="p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center"
+            title="Text Color"
+          >
+            <Palette size={16} />
+            <div className="w-4 h-1 bg-red-500 ml-1 rounded"></div>
+          </button>
+          <input
+            ref={colorPickerRef}
+            type="color"
+            onChange={(e) => handleColorPick(e.target.value)}
+            className="sr-only"
+          />
+          <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg p-2 z-10 grid grid-cols-8 gap-1 w-64" 
+               style={{ display: 'none' }}
+               onMouseEnter={(e) => e.currentTarget.style.display = 'grid'}
+               onMouseLeave={(e) => e.currentTarget.style.display = 'none'}>
+            {quickColors.map((color) => (
+              <button
+                key={color}
+                onClick={() => handleColorPick(color)}
+                className="w-6 h-6 rounded border border-gray-300 hover:scale-110 transition-transform"
+                style={{ backgroundColor: color }}
+                title={color}
+              />
+            ))}
+          </div>
+        </div>
+      )
+    },
+    { 
+      custom: true, 
+      element: (
+        <div key="highlight-color" className="relative">
+          <button
+            type="button"
+            onClick={() => highlightColorPickerRef.current?.click()}
+            className="p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            title="Highlight Color"
+          >
+            <Highlighter size={16} />
+          </button>
+          <input
+            ref={highlightColorPickerRef}
+            type="color"
+            onChange={(e) => handleHighlightColorPick(e.target.value)}
+            className="sr-only"
+          />
+        </div>
+      )
+    },
+    { divider: true },
+
+    // Headers and blocks
     { icon: Heading1, action: () => formatBlock('H1'), title: 'Heading 1' },
     { icon: Heading2, action: () => formatBlock('H2'), title: 'Heading 2' },
     { icon: Heading3, action: () => formatBlock('H3'), title: 'Heading 3' },
     { icon: Type, action: () => formatBlock('P'), title: 'Paragraph' },
     { divider: true },
+    
+    // Alignment
     { icon: AlignLeft, action: () => execCommand('justifyLeft'), title: 'Align Left' },
     { icon: AlignCenter, action: () => execCommand('justifyCenter'), title: 'Align Center' },
     { icon: AlignRight, action: () => execCommand('justifyRight'), title: 'Align Right' },
     { icon: AlignJustify, action: () => execCommand('justifyFull'), title: 'Justify' },
     { divider: true },
+    
+    // Lists and indentation
     { icon: List, action: () => execCommand('insertUnorderedList'), title: 'Bullet List' },
     { icon: ListOrdered, action: () => execCommand('insertOrderedList'), title: 'Numbered List' },
+    { icon: Indent, action: () => execCommand('indent'), title: 'Increase Indent' },
+    { icon: Outdent, action: () => execCommand('outdent'), title: 'Decrease Indent' },
     { icon: Quote, action: () => formatBlock('BLOCKQUOTE'), title: 'Quote' },
     { divider: true },
+    
+    // Insert elements
     { icon: Link, action: handleLinkInsert, title: 'Insert Link' },
     { icon: Image, action: handleImageInsert, title: 'Insert Image' },
+    { icon: Table, action: handleTableInsert, title: 'Insert Table' },
     { icon: Code, action: () => execCommand('formatBlock', 'PRE'), title: 'Code Block' },
-    { icon: Palette, action: handleColorPicker, title: 'Text Color' },
-    { icon: FileCode2, action: handleCustomHtml, title: 'Insert Custom HTML' },
+    { icon: Minus, action: () => insertHTML('<hr>'), title: 'Horizontal Rule' },
     { divider: true },
+    
+    // Edit operations
+    { icon: Copy, action: handleCopy, title: 'Copy (Ctrl+C)' },
+    { icon: Scissors, action: handleCut, title: 'Cut (Ctrl+X)' },
+    { icon: ClipboardPaste, action: handlePaste, title: 'Paste (Ctrl+V)' },
+    { icon: Search, action: handleFindReplace, title: 'Find & Replace' },
+    { divider: true },
+    
+    // History
     { icon: Undo, action: undo, title: 'Undo (Ctrl+Z)', disabled: historyIndex <= 0 },
     { icon: Redo, action: redo, title: 'Redo (Ctrl+Y)', disabled: historyIndex >= history.length - 1 },
   ];
@@ -286,9 +551,14 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
             {toolbarButtons.map((button, index) => {
               if (button.divider) {
                 return (
-                  <div key={index} className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+                  <div key={index} className="h-8 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
                 );
               }
+              
+              if (button.custom && button.element) {
+                return button.element;
+              }
+              
               const Icon = button.icon!;
               return (
                 <button
@@ -301,7 +571,6 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
                     hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors
                     disabled:opacity-50 disabled:cursor-not-allowed
                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
-                    ${button.className || ''}
                   `}
                   title={button.title}
                 >
@@ -349,7 +618,7 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
           </div>
         </div>
         
-        {/* Stats and HTML Templates */}
+        {/* Stats and Controls */}
         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <div className="flex items-center gap-4">
             <span>Words: {wordCount}</span>
@@ -359,50 +628,15 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
             )}
           </div>
           
-          {isHtmlMode && (
-            <div className="flex items-center gap-2">
-              <select 
-                onChange={(e) => {
-                  if (e.target.value) {
-                    insertHTML(e.target.value);
-                    e.target.value = '';
-                  }
-                }}
-                className="text-xs bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1"
-              >
-                <option value="">Quick HTML...</option>
-                <option value="<p></p>">Paragraph</option>
-                <option value="<h1></h1>">Heading 1</option>
-                <option value="<h2></h2>">Heading 2</option>
-                <option value="<h3></h3>">Heading 3</option>
-                <option value="<ul><li></li></ul>">Bullet List</option>
-                <option value="<ol><li></li></ol>">Numbered List</option>
-                <option value='<a href="" target="_blank"></a>'>Link</option>
-                <option value='<img src="" alt="" style="max-width: 100%;" />'>Image</option>
-                <option value="<blockquote></blockquote>">Quote</option>
-                <option value="<div class=''></div>">Div Container</option>
-                <option value="<span style=''></span>">Inline Span</option>
-                <option value="<br />">Line Break</option>
-                <option value="<hr />">Horizontal Rule</option>
-                <option value='<table><tr><td></td><td></td></tr></table>'>Table</option>
-              </select>
-            </div>
-          )}
-          
-          {!isHtmlMode && (
-            <div className="flex items-center gap-2">
-              <span>Ctrl+S to save state</span>
-              <span>•</span>
-              <span>Ctrl+Z/Y for undo/redo</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 text-xs">
+            <span>Ctrl+S to save • Ctrl+Z/Y for undo/redo</span>
+          </div>
         </div>
       </div>
 
-      {/* Editor/Preview Area */}
+      {/* Editor Area */}
       <div className="relative">
         {isPreviewMode ? (
-          // Preview Mode
           <div 
             className="p-4 prose dark:prose-invert max-w-none overflow-auto"
             style={{ minHeight, maxHeight }}
@@ -414,33 +648,16 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
             />
           </div>
         ) : isHtmlMode ? (
-          // HTML Source Mode
-          <div className="relative">
-            <textarea
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              onBlur={() => saveToHistory(value)}
-              className="w-full p-4 font-mono text-sm bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 border-0 outline-none resize-none"
-              style={{ minHeight, maxHeight }}
-              placeholder="Enter HTML code directly..."
-              spellCheck={false}
-            />
-            
-            {/* HTML Syntax Help */}
-            <div className="absolute top-2 right-2 bg-gray-800 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-70 pointer-events-none">
-              HTML Mode
-            </div>
-            
-            {/* HTML Help Panel */}
-            <div className="absolute bottom-2 left-2 bg-gray-800 dark:bg-gray-700 text-white text-xs px-3 py-2 rounded max-w-xs opacity-90 pointer-events-none">
-              <div className="font-medium mb-1">HTML Tips:</div>
-              <div>• Use the dropdown above for quick snippets</div>
-              <div>• All HTML tags are supported</div>
-              <div>• Switch to Preview to see results</div>
-            </div>
-          </div>
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onBlur={() => saveToHistory(value)}
+            className="w-full p-4 font-mono text-sm bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 border-0 outline-none resize-none"
+            style={{ minHeight, maxHeight }}
+            placeholder="Enter HTML code directly..."
+            spellCheck={false}
+          />
         ) : (
-          // Visual Editor Mode
           <div
             ref={editorRef}
             contentEditable
@@ -462,7 +679,7 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
                 saveToHistory(editorRef.current.innerHTML);
               }
             }}
-            className="p-4 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white overflow-auto resize-none"
+            className="p-4 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white overflow-auto"
             style={{ 
               minHeight, 
               maxHeight,
@@ -474,69 +691,12 @@ const AdvancedRichTextEditor: React.FC<AdvancedRichTextEditorProps> = ({
           />
         )}
         
-        {/* Placeholder styling */}
         <style jsx>{`
           [contenteditable]:empty:before {
             content: attr(data-placeholder);
             color: #9ca3af;
             pointer-events: none;
             font-style: italic;
-          }
-          
-          [contenteditable] h1 {
-            font-size: 2em;
-            font-weight: bold;
-            margin: 0.67em 0;
-          }
-          
-          [contenteditable] h2 {
-            font-size: 1.5em;
-            font-weight: bold;
-            margin: 0.75em 0;
-          }
-          
-          [contenteditable] h3 {
-            font-size: 1.17em;
-            font-weight: bold;
-            margin: 0.83em 0;
-          }
-          
-          [contenteditable] p {
-            margin: 0.5em 0;
-          }
-          
-          [contenteditable] blockquote {
-            margin: 1em 0;
-            padding: 0.5em 1em;
-            border-left: 4px solid #cbd5e0;
-            background-color: #f7fafc;
-            font-style: italic;
-          }
-          
-          [contenteditable] pre {
-            background-color: #2d3748;
-            color: #e2e8f0;
-            padding: 1em;
-            border-radius: 4px;
-            overflow-x: auto;
-            font-family: 'Courier New', monospace;
-          }
-          
-          [contenteditable] ul, [contenteditable] ol {
-            margin: 0.5em 0;
-            padding-left: 2em;
-          }
-          
-          [contenteditable] a {
-            color: #3182ce;
-            text-decoration: underline;
-          }
-          
-          [contenteditable] img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-            margin: 0.5em 0;
           }
         `}</style>
       </div>
