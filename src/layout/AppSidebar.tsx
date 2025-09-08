@@ -13,7 +13,7 @@ import {
   Box, 
   PieChart, 
   Archive, 
-
+  MessageSquare,
   ChevronDown 
 } from "lucide-react";
 
@@ -120,6 +120,11 @@ const AppSidebar: React.FC = () => {
     icon: <User size={20} />, // User Management
     name: "User Management",
     path: "/userManagement",
+  },
+  {
+    icon: <MessageSquare size={20} />, // Contact Us Management
+    name: "Contact Us",
+    path: "/contactUs",
   },
   {
     icon: <FileText size={20} />, // Content Management
