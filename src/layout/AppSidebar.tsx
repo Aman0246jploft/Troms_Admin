@@ -14,7 +14,8 @@ import {
   PieChart, 
   Archive, 
   MessageSquare,
-  ChevronDown 
+  ChevronDown,
+  Dumbbell 
 } from "lucide-react";
 
 type NavItem = {
@@ -120,6 +121,11 @@ const AppSidebar: React.FC = () => {
     icon: <User size={20} />, // User Management
     name: "User Management",
     path: "/userManagement",
+  },
+  {
+    icon: <Dumbbell size={20} />, // Exercise Management
+    name: "Exercise Management",
+    path: "/exerciseManagement",
   },
   {
     icon: <MessageSquare size={20} />, // Contact Us Management

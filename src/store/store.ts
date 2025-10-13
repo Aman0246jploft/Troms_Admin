@@ -3,6 +3,7 @@ import authReducer from "@/store/slices/auth";
 import userReducer from '@/store/slices/user';
 import contentManagementReducer from '@/store/slices/contentManagement';
 import contactUsReducer from '@/store/slices/contactUs';
+import exerciseReducer from '@/store/slices/exercise';
 
 // Custom middleware to log store changes
 const loggerMiddleware = (storeAPI: any) => (next: any) => (action: any) => {
@@ -17,7 +18,8 @@ export const store = configureStore({
     auth: authReducer,
     user: userReducer,
     contentManagement: contentManagementReducer,
-    contactUs: contactUsReducer
+    contactUs: contactUsReducer,
+    exercise: exerciseReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(loggerMiddleware),
