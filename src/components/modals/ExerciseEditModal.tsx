@@ -1,11 +1,69 @@
 "use client";
-import React, { useState, useEffect } from "react";
 
-import Button from "../ui/button/Button";
+import React, { useState, useRef, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useAppDispatch, useAppSelector } from "@/store/hooks/redux";
 import { updateExercise } from "@/store/slices/exercise";
 import { toast } from "react-hot-toast";
 import { Modal } from "../ui/modal";
+import Multiselect from "../ui/multiselect";
+
+const BODY_PART_LIST = [
+  "back",
+  "cardio",
+  "chest",
+  "lower arms",
+  "lower legs",
+  "neck",
+  "shoulders",
+  "upper arms",
+  "upper legs",
+  "waist"
+];
+
+const TARGET_LIST = [
+  "abductors",
+  "abs",
+  "adductors",
+  "biceps",
+  "calves",
+  "cardiovascular system",
+  "delts",
+  "forearms",
+  "glutes",
+  "hamstrings",
+  "lats",
+  "levator scapulae",
+  "pectorals",
+  "quads",
+  "serratus anterior",
+  "spine",
+  "traps",
+  "triceps",
+  "upper back"
+];
+
+// Validation schema matching backend
+const editExerciseSchema = z.object({
+  name: z.string().min(1, "Exercise name is required"),
+  equipment: z.string().optional(),
+  json: z.object({
+    bodyPart: z.string().min(1, "Body part is required"),
+    equipment: z.string().min(1, "Equipment is required"),
+    name: z.string().min(1, "Exercise name is required"),
+    target: z.string().min(1, "Target muscle is required"),
+    secondaryMuscles: z.array(z.string()).optional(),
+    instructions: z.array(z.string()).optional(),
+    description: z.string().optional(),
+    difficulty: z.string().optional(),
+    category: z.string().optional(),
+  }),
+  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+});
+
+type EditExerciseFormData = z.infer<typeof editExerciseSchema>;
 
 interface Exercise {
   id: string;
@@ -24,87 +82,140 @@ interface ExerciseEditModalProps {
   onSuccess: () => void;
 }
 
-export default function ExerciseEditModal({ 
+const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
   isOpen, 
   onClose, 
   exercise,
-  onSuccess 
-}: ExerciseEditModalProps) {
+  onSuccess,
+}) => {
   const dispatch = useAppDispatch();
-  const { updating } = useAppSelector(state => state.exercise);
+  const { updating } = useAppSelector((state) => state.exercise);
 
-  const [formData, setFormData] = useState({
+  const [gifFile, setGifFile] = useState<File | null>(null);
+  const [pngFile, setPngFile] = useState<File | null>(null);
+  const gifInputRef = useRef<HTMLInputElement>(null);
+  const pngInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+    watch,
+  } = useForm<EditExerciseFormData>({
+    resolver: zodResolver(editExerciseSchema),
+    defaultValues: {
     name: "",
     equipment: "",
-    gifUrl: "",
-    pngUrl: "",
-    status: "ACTIVE"
+      json: {
+        bodyPart: "",
+        equipment: "",
+        name: "",
+        target: "",
+        secondaryMuscles: [],
+        instructions: [],
+        description: "",
+        difficulty: "",
+        category: "",
+      },
+      status: "ACTIVE",
+    },
   });
 
-  const [selectedFiles, setSelectedFiles] = useState({
-    gifFile: null as File | null,
-    pngFile: null as File | null,
-  });
+  const watchedName = watch("name");
+  const watchedJsonName = watch("json.name");
+
+  // Auto-sync names
+  React.useEffect(() => {
+    if (watchedName && !watchedJsonName) {
+      setValue("json.name", watchedName);
+    }
+  }, [watchedName, watchedJsonName, setValue]);
 
   // Update form data when exercise changes
   useEffect(() => {
     if (exercise) {
-      setFormData({
+      const jsonData = exercise.json || {};
+      reset({
         name: exercise.name || "",
         equipment: exercise.equipment || "",
-        gifUrl: exercise.gifUrl || "",
-        pngUrl: exercise.pngUrl || "",
-        status: exercise.status || "ACTIVE"
+        json: {
+          bodyPart: jsonData.bodyPart || "",
+          equipment: jsonData.equipment || exercise.equipment || "",
+          name: jsonData.name || exercise.name || "",
+          target: jsonData.target || "",
+          secondaryMuscles: jsonData.secondaryMuscles || [],
+          instructions: jsonData.instructions || [],
+          description: jsonData.description || "",
+          difficulty: jsonData.difficulty || "",
+          category: jsonData.category || "",
+        },
+        status: exercise.status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
       });
     }
-  }, [exercise]);
+  }, [exercise, reset]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, files } = e.target;
-    if (files && files[0]) {
-      setSelectedFiles(prev => ({
-        ...prev,
-        [name]: files[0]
-      }));
+  const handleFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: "gif" | "png"
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (type === "gif") {
+        setGifFile(file);
+      } else {
+        setPngFile(file);
+      }
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const removeFile = (type: "gif" | "png") => {
+    if (type === "gif") {
+      setGifFile(null);
+      if (gifInputRef.current) {
+        gifInputRef.current.value = "";
+      }
+    } else {
+      setPngFile(null);
+      if (pngInputRef.current) {
+        pngInputRef.current.value = "";
+      }
+    }
+  };
+
+  const onSubmit = async (data: EditExerciseFormData) => {
     if (!exercise) return;
 
     try {
-      // Create FormData for file uploads
       const formDataToSend = new FormData();
       
       // Add text fields
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('equipment', formData.equipment);
-      formDataToSend.append('status', formData.status);
+      formDataToSend.append("name", data.name);
+      if (data.equipment) {
+        formDataToSend.append("equipment", data.equipment);
+      }
+
+      // Add JSON data
+      formDataToSend.append("json", JSON.stringify(data.json));
+      if (data.status) {
+        formDataToSend.append("status", data.status);
+      }
       
       // Add files if selected
-      if (selectedFiles.gifFile) {
-        formDataToSend.append('gifFile', selectedFiles.gifFile);
+      if (gifFile) {
+        formDataToSend.append("gifFile", gifFile);
       }
-      if (selectedFiles.pngFile) {
-        formDataToSend.append('pngFile', selectedFiles.pngFile);
+      if (pngFile) {
+        formDataToSend.append("pngFile", pngFile);
       }
       
       // Add existing URLs if no new files are selected
-      if (!selectedFiles.gifFile && formData.gifUrl) {
-        formDataToSend.append('gifUrl', formData.gifUrl);
+      if (!gifFile && exercise.gifUrl) {
+        formDataToSend.append("gifUrl", exercise.gifUrl);
       }
-      if (!selectedFiles.pngFile && formData.pngUrl) {
-        formDataToSend.append('pngUrl', formData.pngUrl);
+      if (!pngFile && exercise.pngUrl) {
+        formDataToSend.append("pngUrl", exercise.pngUrl);
       }
 
       await dispatch(updateExercise({
@@ -112,163 +223,558 @@ export default function ExerciseEditModal({
         formData: formDataToSend
       })).unwrap();
       
-      toast.success("Exercise updated successfully");
+      toast.success("Exercise updated successfully!");
+      handleClose();
       onSuccess();
     } catch (error: any) {
+      console.error("Error updating exercise:", error);
       toast.error(error?.message || "Failed to update exercise");
     }
   };
 
-  if (!exercise) return null;
+  const handleClose = () => {
+    reset();
+    setGifFile(null);
+    setPngFile(null);
+    if (gifInputRef.current) {
+      gifInputRef.current.value = "";
+    }
+    if (pngInputRef.current) {
+      pngInputRef.current.value = "";
+    }
+    onClose();
+  };
+
+  if (!isOpen || !exercise) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Exercise Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Exercise Name
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
+    <Modal isOpen={isOpen} onClose={handleClose} >
+
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Edit Exercise
+          </h2>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
-        {/* Equipment */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Exercise Name *
+          </label>
+              <Controller
+                name="name"
+                control={control}
+                render={({ field }) => (
+          <input
+                    {...field}
+            type="text"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter exercise name"
+                  />
+                )}
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+              )}
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Equipment
           </label>
+              <Controller
+                name="equipment"
+                control={control}
+                render={({ field }) => (
           <input
+                    {...field}
             type="text"
-            name="equipment"
-            value={formData.equipment}
-            onChange={handleChange}
-            className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter equipment"
+                  />
+                )}
+              />
+              {errors.equipment && (
+                <p className="mt-1 text-sm text-red-600">{errors.equipment.message}</p>
+              )}
+            </div>
         </div>
 
-        {/* GIF File Upload */}
+          {/* JSON Details */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Exercise Details
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            GIF File (Optional)
+                  Body Part *
           </label>
+                <Controller
+                  name="json.bodyPart"
+                  control={control}
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="">Select body part</option>
+                      {BODY_PART_LIST.map((part) => (
+                        <option key={part} value={part} className="capitalize">
+                          {part}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+                {errors.json?.bodyPart && (
+                  <p className="mt-1 text-sm text-red-600">{errors.json.bodyPart.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Target Muscle *
+                </label>
+                <Controller
+                  name="json.target"
+                  control={control}
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="">Select target muscle</option>
+                      {TARGET_LIST.map((muscle) => (
+                        <option key={muscle} value={muscle} className="capitalize">
+                          {muscle}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+                {errors.json?.target && (
+                  <p className="mt-1 text-sm text-red-600">{errors.json.target.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  JSON Equipment *
+          </label>
+                <Controller
+                  name="json.equipment"
+                  control={control}
+                  render={({ field }) => (
           <input
-            type="file"
-            name="gifFile"
-            accept=".gif,image/gif"
-            onChange={handleFileChange}
-            className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          {selectedFiles.gifFile && (
-            <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-              Selected: {selectedFiles.gifFile.name}
-            </p>
-          )}
-          {!selectedFiles.gifFile && formData.gifUrl && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Current: {formData.gifUrl}
-            </p>
+                      {...field}
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="e.g., dumbbell, barbell, bodyweight"
+                    />
+                  )}
+                />
+                {errors.json?.equipment && (
+                  <p className="mt-1 text-sm text-red-600">{errors.json.equipment.message}</p>
           )}
         </div>
 
-        {/* PNG File Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            PNG File (Optional)
+                  Difficulty
           </label>
-          <input
-            type="file"
-            name="pngFile"
-            accept=".png,image/png"
-            onChange={handleFileChange}
-            className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          {selectedFiles.pngFile && (
-            <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-              Selected: {selectedFiles.pngFile.name}
-            </p>
-          )}
-          {!selectedFiles.pngFile && formData.pngUrl && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Current: {formData.pngUrl}
-            </p>
-          )}
-        </div>
-
-        {/* Status */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Status
-          </label>
+                <Controller
+                  name="json.difficulty"
+                  control={control}
+                  render={({ field }) => (
           <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
+                      {...field}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="">Select difficulty</option>
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
           </select>
+                  )}
+                />
         </div>
 
-        {/* Exercise Details (Read-only) */}
-        {exercise.json && (
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Exercise Details
+                  Category
             </label>
-            <div className="p-4 rounded-lg bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.05]">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {exercise.json.bodyPart && (
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400">Body Part:</span>{" "}
-                    <span className="text-gray-900 dark:text-white">{exercise.json.bodyPart}</span>
+                <Controller
+                  name="json.category"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="e.g., strength, cardio, flexibility"
+                    />
+                  )}
+                />
+              </div>
                   </div>
+
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Description
+              </label>
+              <Controller
+                name="json.description"
+                control={control}
+                render={({ field }) => (
+                  <textarea
+                    {...field}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter exercise description"
+                  />
                 )}
-                {exercise.json.target && (
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400">Target:</span>{" "}
-                    <span className="text-gray-900 dark:text-white">{exercise.json.target}</span>
-                  </div>
-                )}
-                {exercise.json.difficulty && (
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400">Difficulty:</span>{" "}
-                    <span className="text-gray-900 dark:text-white">{exercise.json.difficulty}</span>
-                  </div>
-                )}
+              />
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Secondary Muscles
+                </label>
+                <Controller
+                  name="json.secondaryMuscles"
+                  control={control}
+                  render={({ field }) => (
+                    <Multiselect
+                      options={TARGET_LIST}
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      placeholder="Select secondary muscles..."
+                    />
+                  )}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Select multiple secondary muscles that are also engaged
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Instructions
+                </label>
+                <Controller
+                  name="json.instructions"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      {/* Display existing instructions */}
+                      {field.value && field.value.length > 0 && (
+                        <div className="space-y-2">
+                          {field.value.map((instruction, index) => (
+                            <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                              <span className="flex-1 text-sm text-gray-900 dark:text-white">
+                                {index + 1}. {instruction}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newInstructions = field.value.filter((_, i) => i !== index);
+                                  field.onChange(newInstructions);
+                                }}
+                                className="text-red-600 hover:text-red-800 p-1"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Add new instruction */}
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          placeholder="Enter new instruction..."
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const input = e.target as HTMLInputElement;
+                              const newInstruction = input.value.trim();
+                              if (newInstruction) {
+                                const currentInstructions = field.value || [];
+                                field.onChange([...currentInstructions, newInstruction]);
+                                input.value = '';
+                              }
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                            const newInstruction = input.value.trim();
+                            if (newInstruction) {
+                              const currentInstructions = field.value || [];
+                              field.onChange([...currentInstructions, newInstruction]);
+                              input.value = '';
+                            }
+                          }}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Click "Add" or press Enter to add each instruction
+                </p>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-white/[0.05]">
-          <Button
+          {/* File Uploads */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Exercise Images
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* GIF Animation */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  GIF Animation
+                </label>
+                
+                {/* Current GIF Display */}
+                {!gifFile && exercise.gifUrl && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Current GIF:</p>
+                    <div className="relative group">
+                      <div className="w-full h-48 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600">
+                        <img 
+                          src={exercise.gifUrl} 
+                          alt="Current GIF" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                          Current
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* New GIF Upload */}
+                <div className="space-y-3">
+                  <input
+                    ref={gifInputRef}
+                    type="file"
+                    accept=".gif"
+                    onChange={(e) => handleFileChange(e, "gif")}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => gifInputRef.current?.click()}
+                    className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  >
+                    {gifFile ? "Change GIF" : "Choose New GIF"}
+                  </button>
+                  
+                  {gifFile && (
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-green-100 dark:bg-green-800 rounded-lg flex items-center justify-center">
+                            <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                              {gifFile.name}
+                            </p>
+                            <p className="text-xs text-green-600 dark:text-green-400">
+                              {(gifFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFile("gif")}
+                          className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/20"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* PNG Image */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  PNG Image
+                </label>
+                
+                {/* Current PNG Display */}
+                {!pngFile && exercise.pngUrl && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Current Image:</p>
+                    <div className="relative group">
+                      <div className="w-full h-48 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600">
+                        <img 
+                          src={exercise.pngUrl} 
+                          alt="Current Image" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                          Current
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* New PNG Upload */}
+                <div className="space-y-3">
+                  <input
+                    ref={pngInputRef}
+                    type="file"
+                    accept=".png,.jpg,.jpeg"
+                    onChange={(e) => handleFileChange(e, "png")}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => pngInputRef.current?.click()}
+                    className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  >
+                    {pngFile ? "Change Image" : "Choose New Image"}
+                  </button>
+                  
+                  {pngFile && (
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-green-100 dark:bg-green-800 rounded-lg flex items-center justify-center">
+                            <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                              {pngFile.name}
+                            </p>
+                            <p className="text-xs text-green-600 dark:text-green-400">
+                              {(pngFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFile("png")}
+                          className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/20"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Help Text */}
+            {/* <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-start space-x-2">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="text-sm text-blue-800 dark:text-blue-200">
+                  <p className="font-medium mb-1">Image Upload Guidelines:</p>
+                  <ul className="text-xs space-y-1 text-blue-700 dark:text-blue-300">
+                    <li>• GIF files should be optimized for web (max 5MB recommended)</li>
+                    <li>• PNG/JPG images should be high quality but web-optimized</li>
+                    <li>• Current images will be replaced when you upload new ones</li>
+                    <li>• Leave empty to keep existing images</li>
+                  </ul>
+                </div>
+              </div>
+            </div> */}
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Status
+            </label>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <select
+                  {...field}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
+                </select>
+              )}
+            />
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end space-x-4 pt-6 border-t">
+            <button
             type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={updating}
+              onClick={handleClose}
+              className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             Cancel
-          </Button>
-          <Button
+            </button>
+            <button
             type="submit"
-            variant="primary"
             disabled={updating}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {updating ? "Updating..." : "Update Exercise"}
-          </Button>
+            </button>
         </div>
       </form>
+      </div>
+
     </Modal>
   );
-}
+};
+
+export default ExerciseEditModal;
 
