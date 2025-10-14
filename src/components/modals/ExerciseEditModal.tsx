@@ -41,6 +41,11 @@ export default function ExerciseEditModal({
     status: "ACTIVE"
   });
 
+  const [selectedFiles, setSelectedFiles] = useState({
+    gifFile: null as File | null,
+    pngFile: null as File | null,
+  });
+
   // Update form data when exercise changes
   useEffect(() => {
     if (exercise) {
@@ -62,15 +67,49 @@ export default function ExerciseEditModal({
     }));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, files } = e.target;
+    if (files && files[0]) {
+      setSelectedFiles(prev => ({
+        ...prev,
+        [name]: files[0]
+      }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!exercise) return;
 
     try {
+      // Create FormData for file uploads
+      const formDataToSend = new FormData();
+      
+      // Add text fields
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('equipment', formData.equipment);
+      formDataToSend.append('status', formData.status);
+      
+      // Add files if selected
+      if (selectedFiles.gifFile) {
+        formDataToSend.append('gifFile', selectedFiles.gifFile);
+      }
+      if (selectedFiles.pngFile) {
+        formDataToSend.append('pngFile', selectedFiles.pngFile);
+      }
+      
+      // Add existing URLs if no new files are selected
+      if (!selectedFiles.gifFile && formData.gifUrl) {
+        formDataToSend.append('gifUrl', formData.gifUrl);
+      }
+      if (!selectedFiles.pngFile && formData.pngUrl) {
+        formDataToSend.append('pngUrl', formData.pngUrl);
+      }
+
       await dispatch(updateExercise({
         id: exercise.id,
-        ...formData
+        formData: formDataToSend
       })).unwrap();
       
       toast.success("Exercise updated successfully");
@@ -115,34 +154,52 @@ export default function ExerciseEditModal({
           />
         </div>
 
-        {/* GIF URL */}
+        {/* GIF File Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            GIF URL (Optional)
+            GIF File (Optional)
           </label>
           <input
-            type="url"
-            name="gifUrl"
-            value={formData.gifUrl}
-            onChange={handleChange}
-            placeholder="https://example.com/exercise.gif"
+            type="file"
+            name="gifFile"
+            accept=".gif,image/gif"
+            onChange={handleFileChange}
             className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          {selectedFiles.gifFile && (
+            <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+              Selected: {selectedFiles.gifFile.name}
+            </p>
+          )}
+          {!selectedFiles.gifFile && formData.gifUrl && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Current: {formData.gifUrl}
+            </p>
+          )}
         </div>
 
-        {/* PNG URL */}
+        {/* PNG File Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            PNG URL (Optional)
+            PNG File (Optional)
           </label>
           <input
-            type="url"
-            name="pngUrl"
-            value={formData.pngUrl}
-            onChange={handleChange}
-            placeholder="https://example.com/exercise.png"
+            type="file"
+            name="pngFile"
+            accept=".png,image/png"
+            onChange={handleFileChange}
             className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-white/[0.05] bg-white dark:bg-white/[0.03] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          {selectedFiles.pngFile && (
+            <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+              Selected: {selectedFiles.pngFile.name}
+            </p>
+          )}
+          {!selectedFiles.pngFile && formData.pngUrl && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Current: {formData.pngUrl}
+            </p>
+          )}
         </div>
 
         {/* Status */}

@@ -29,9 +29,10 @@ interface Exercise {
 interface ExerciseManagementTableProps {
   exercises: Exercise[];
   onRefresh: () => void;
+  onEditExercise?: (exerciseId: string) => void;
 }
 
-export default function ExerciseManagementTable({ exercises, onRefresh }: ExerciseManagementTableProps) {
+export default function ExerciseManagementTable({ exercises, onRefresh, onEditExercise }: ExerciseManagementTableProps) {
   const dispatch = useAppDispatch();
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,8 +57,13 @@ export default function ExerciseManagementTable({ exercises, onRefresh }: Exerci
   };
 
   const handleEditExercise = (exercise: Exercise) => {
-    setSelectedExercise(exercise);
-    setIsModalOpen(true);
+    if (onEditExercise) {
+      onEditExercise(exercise.id);
+    } else {
+      // Fallback to local modal if no prop is provided
+      setSelectedExercise(exercise);
+      setIsModalOpen(true);
+    }
   };
 
   const handleCloseModal = () => {
@@ -209,14 +215,14 @@ export default function ExerciseManagementTable({ exercises, onRefresh }: Exerci
                     {/* Actions */}
                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                       <div className="flex gap-2">
-                        {/* <Button
+                        <Button
                           size="sm"
                           variant="primary"
                           onClick={() => handleEditExercise(exercise)}
                           className="px-3 py-1"
                         >
                           Edit
-                        </Button> */}
+                        </Button>
                         <Button
                           size="sm"
                           variant={exercise.status === "ACTIVE" ? "outline" : "primary"}

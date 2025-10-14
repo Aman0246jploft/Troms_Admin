@@ -7,6 +7,7 @@ interface ExerciseSearchFilterProps {
   onStatusFilter: (status: string) => void;
   onTargetFilter: (target: string) => void;
   onBodyPartFilter: (bodyPart: string) => void;
+  onCreateExercise?: () => void;
   defaultValue?: string;
   defaultStatus?: string;
   defaultTarget?: string;
@@ -55,6 +56,7 @@ export default function ExerciseSearchFilter({
   onStatusFilter,
   onTargetFilter,
   onBodyPartFilter,
+  onCreateExercise,
   defaultValue = "",
   defaultStatus = "",
   defaultTarget = "",
@@ -141,6 +143,11 @@ export default function ExerciseSearchFilter({
             <Button type="button" variant="outline" size="md" onClick={handleReset}>
               Reset
             </Button>
+            {onCreateExercise && (
+              <Button type="button" variant="primary" size="md" onClick={onCreateExercise}>
+                Create Exercise
+              </Button>
+            )}
           </div>
         </div>
 

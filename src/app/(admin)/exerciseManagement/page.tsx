@@ -6,13 +6,15 @@ import GlobalLoader from "@/components/GlobalLoader";
 import ExerciseManagementTable from "@/components/tables/ExerciseManagementTable";
 import ExerciseSearchFilter from "@/components/tables/ExerciseSearchFilter";
 import Pagination from "@/components/tables/Pagination";
+import ExerciseEditModal from "@/components/modals/ExerciseEditModal";
+import ExerciseCreateModal from "@/components/modals/ExerciseCreateModal";
 import { useAppDispatch, useAppSelector } from "@/store/hooks/redux";
-import { getExerciseList } from "@/store/slices/exercise";
+import { getExerciseList, updateExercise, getExerciseById } from "@/store/slices/exercise";
 import React, { useEffect, useState, useCallback } from "react";
 
 export default function ExerciseManagement() {
   const dispatch = useAppDispatch();
-  const { loading, exerciseList } = useAppSelector(state => state.exercise);
+  const { loading, exerciseList, updating, selectedExercise } = useAppSelector(state => state.exercise);
   
   // Pagination and search state
   const [currentPage, setCurrentPage] = useState(1);
@@ -21,6 +23,13 @@ export default function ExerciseManagement() {
   const [targetFilter, setTargetFilter] = useState("");
   const [bodyPartFilter, setBodyPartFilter] = useState("");
   const [itemsPerPage] = useState(10);
+  
+  // Edit state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [exerciseToEdit, setExerciseToEdit] = useState<any>(null);
+  
+  // Create state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Extract data from API response
   const result = exerciseList?.result || {};
@@ -96,6 +105,51 @@ export default function ExerciseManagement() {
     fetchExercises(currentPage, searchKeyword, statusFilter, targetFilter, bodyPartFilter);
   };
 
+  // Handle edit exercise
+  const handleEditExercise = useCallback(async (exerciseId: string) => {
+    try {
+      // Fetch the full exercise details
+      const result = await dispatch(getExerciseById(exerciseId)).unwrap();
+      setExerciseToEdit(result.result || result);
+      setIsEditModalOpen(true);
+    } catch (error: any) {
+      console.error("Failed to fetch exercise details:", error);
+      // Fallback: use the exercise from the list if available
+      const exerciseFromList = exercises.find((ex: { id: string; }) => ex.id === exerciseId);
+      if (exerciseFromList) {
+        setExerciseToEdit(exerciseFromList);
+        setIsEditModalOpen(true);
+      }
+    }
+  }, [dispatch, exercises]);
+
+  // Handle edit modal close
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setExerciseToEdit(null);
+  };
+
+  // Handle edit success
+  const handleEditSuccess = () => {
+    handleCloseEditModal();
+    handleRefresh(); // Refresh the list to show updated data
+  };
+
+  // Handle create modal
+  const handleOpenCreateModal = () => {
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false);
+  };
+
+  // Handle create success
+  const handleCreateSuccess = () => {
+    handleCloseCreateModal();
+    handleRefresh(); // Refresh the list to show new data
+  };
+
   return (
     <div>
       <GlobalLoader loading={loading} />
@@ -103,12 +157,13 @@ export default function ExerciseManagement() {
       
       <div className="space-y-6">
         <ComponentCard title="Exercise Management">
-          {/* Search Filter */}
+          {/* Search Filter with Create Button */}
           <ExerciseSearchFilter 
             onSearch={handleSearch}
             onStatusFilter={handleStatusFilter}
             onTargetFilter={handleTargetFilter}
             onBodyPartFilter={handleBodyPartFilter}
+            onCreateExercise={handleOpenCreateModal}
             defaultValue={searchKeyword}
             defaultStatus={statusFilter}
             defaultTarget={targetFilter}
@@ -119,6 +174,7 @@ export default function ExerciseManagement() {
           <ExerciseManagementTable 
             exercises={exercises} 
             onRefresh={handleRefresh}
+            onEditExercise={handleEditExercise}
           />
 
           {/* Pagination */}
@@ -143,6 +199,21 @@ export default function ExerciseManagement() {
           )}
         </ComponentCard>
       </div>
+
+      {/* Exercise Edit Modal */}
+      <ExerciseEditModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        exercise={exerciseToEdit}
+        onSuccess={handleEditSuccess}
+      />
+
+      {/* Exercise Create Modal */}
+      <ExerciseCreateModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseCreateModal}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   );
 }

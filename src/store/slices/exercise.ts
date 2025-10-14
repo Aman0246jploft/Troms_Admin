@@ -12,11 +12,31 @@ export interface ExerciseListParams {
 
 export interface UpdateExerciseParams {
     id: string;
+    formData?: FormData;
     name?: string;
     equipment?: string;
     gifUrl?: string;
     pngUrl?: string;
     status?: string;
+}
+
+export interface CreateExerciseParams {
+    formData?: FormData;
+    name?: string;
+    equipment?: string;
+    json?: {
+        bodyPart: string;
+        equipment: string;
+        name: string;
+        target: string;
+        secondaryMuscles?: string[];
+        instructions?: string[];
+        description?: string;
+        difficulty?: string;
+        category?: string;
+    };
+    status?: string;
+    isDeleted?: boolean;
 }
 
 interface ExerciseState {
@@ -25,6 +45,7 @@ interface ExerciseState {
     loading: boolean;
     updating: boolean;
     deleting: boolean;
+    creating: boolean;
 }
 
 const initialState: ExerciseState = {
@@ -33,6 +54,7 @@ const initialState: ExerciseState = {
     loading: false,
     updating: false,
     deleting: false,
+    creating: false,
 };
 
 // ✅ Async thunk for exercise list with pagination and search
@@ -76,9 +98,21 @@ export const updateExercise = createAsyncThunk(
     "exercise/update",
     async (params: UpdateExerciseParams, { rejectWithValue }) => {
         try {
-            const { id, ...data } = params;
-            const res = await api.patch(`/exercises/${id}`, data);
-            return res.data;
+            const { id, formData, ...data } = params;
+            
+            // If FormData is provided, use it for file uploads
+            if (formData) {
+                const res = await api.patch(`/exercises/${id}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                return res.data;
+            } else {
+                // Fallback to regular JSON data
+                const res = await api.patch(`/exercises/${id}`, data);
+                return res.data;
+            }
         } catch (err: any) {
             return rejectWithValue(err.response?.data || err.message);
         }
@@ -105,6 +139,32 @@ export const toggleExerciseStatus = createAsyncThunk(
         try {
             const res = await api.patch(`/exercises/${id}/toggle-status`);
             return res.data;
+        } catch (err: any) {
+            return rejectWithValue(err.response?.data || err.message);
+        }
+    }
+);
+
+// ✅ Async thunk for creating exercise
+export const createExercise = createAsyncThunk(
+    "exercise/create",
+    async (params: CreateExerciseParams, { rejectWithValue }) => {
+        try {
+            const { formData, ...data } = params;
+            
+            // If FormData is provided, use it for file uploads
+            if (formData) {
+                const res = await api.post("/exercises/create", formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                return res.data;
+            } else {
+                // Fallback to regular JSON data
+                const res = await api.post("/exercises/create", data);
+                return res.data;
+            }
         } catch (err: any) {
             return rejectWithValue(err.response?.data || err.message);
         }
@@ -176,6 +236,17 @@ const exerciseSlice = createSlice({
             })
             .addCase(toggleExerciseStatus.rejected, (state) => {
                 state.updating = false;
+            })
+            
+            // Create Exercise
+            .addCase(createExercise.pending, (state) => {
+                state.creating = true;
+            })
+            .addCase(createExercise.fulfilled, (state) => {
+                state.creating = false;
+            })
+            .addCase(createExercise.rejected, (state) => {
+                state.creating = false;
             });
     },
 });
