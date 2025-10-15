@@ -334,7 +334,7 @@ const ExerciseCreateModal: React.FC<ExerciseCreateModalProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  JSON Equipment *
+                  Equipment *
                 </label>
                 <Controller
                   name="json.equipment"
@@ -344,7 +344,7 @@ const ExerciseCreateModal: React.FC<ExerciseCreateModalProps> = ({
                       {...field}
                       type="text"
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                      placeholder="e.g., dumbbell, barbell, bodyweight"
+                      placeholder="e.g. dumbbell"
                     />
                   )}
                 />
