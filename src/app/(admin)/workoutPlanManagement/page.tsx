@@ -15,7 +15,10 @@ import React, { useEffect, useState, useCallback } from "react";
 
 export default function WorkoutPlanManagement() {
   const dispatch = useAppDispatch();
-  const { loading, workoutPlanAdminList, updating, selectedWorkoutPlanAdmin } = useAppSelector(state => state.workoutPlanAdmin);
+  const {  workoutPlanAdminList, updating, selectedWorkoutPlanAdmin } = useAppSelector(state => state.workoutPlanAdmin);
+  const { loading } = useAppSelector(state => state.exercise);
+
+  
   const { exerciseList } = useAppSelector(state => state.exercise);
   
   // Pagination and search state

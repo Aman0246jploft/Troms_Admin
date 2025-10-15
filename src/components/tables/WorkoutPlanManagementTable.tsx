@@ -200,7 +200,7 @@ export default function WorkoutPlanManagementTable({
                             {workoutPlan.totalDays} Day Plan
                           </span>
                           <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                            ID: {workoutPlan.id.slice(0, 8)}...
+                            {/* ID: {workoutPlan.id.slice(0, 8)}... */}
                           </span>
                         </div>
                       </div>
@@ -280,6 +280,7 @@ export default function WorkoutPlanManagementTable({
         onClose={handleCloseModal}
         workoutPlan={selectedWorkoutPlan}
         onSuccess={handleUpdateSuccess}
+        exercises={selectedWorkoutPlan ? Object.values(selectedWorkoutPlan.workouts).flat() : []}
       />
     </>
   );
