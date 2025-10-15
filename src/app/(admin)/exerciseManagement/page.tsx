@@ -65,7 +65,7 @@ export default function ExerciseManagement() {
     
     dispatch(getExerciseList(params));
   }, [dispatch, itemsPerPage]);
-
+      
   // Initial load
   useEffect(() => {
     fetchExercises(currentPage, searchKeyword, statusFilter, targetFilter, bodyPartFilter);
