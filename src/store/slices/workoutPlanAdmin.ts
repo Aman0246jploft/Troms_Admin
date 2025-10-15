@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import api from "../api";
+import toast from "react-hot-toast";
 
 export interface WorkoutPlanAdminListParams {
     page?: number;
@@ -103,6 +104,7 @@ export const createWorkoutPlanAdmin = createAsyncThunk(
             const res = await api.post("/workout-plan-admin", params);
             return res.data;
         } catch (err: any) {
+            // toast.error("Validation Error")
             return rejectWithValue(err.response?.data || err.message);
         }
     }
