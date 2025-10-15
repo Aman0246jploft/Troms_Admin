@@ -15,7 +15,8 @@ import {
   Archive, 
   MessageSquare,
   ChevronDown,
-  Dumbbell 
+  Dumbbell,
+  Calendar
 } from "lucide-react";
 
 type NavItem = {
@@ -126,6 +127,11 @@ const AppSidebar: React.FC = () => {
     icon: <Dumbbell size={20} />, // Exercise Management
     name: "Exercise Management",
     path: "/exerciseManagement",
+  },
+  {
+    icon: <Calendar size={20} />, // Workout Plan Management
+    name: "Workout Plan Management",
+    path: "/workoutPlanManagement",
   },
   {
     icon: <MessageSquare size={20} />, // Contact Us Management
