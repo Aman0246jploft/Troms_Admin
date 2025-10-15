@@ -8,6 +8,7 @@ import ExerciseSearchFilter from "@/components/tables/ExerciseSearchFilter";
 import Pagination from "@/components/tables/Pagination";
 import ExerciseEditModal from "@/components/modals/ExerciseEditModal";
 import ExerciseCreateModal from "@/components/modals/ExerciseCreateModal";
+import ExerciseViewModal from "@/components/modals/ExerciseViewModal";
 import { useAppDispatch, useAppSelector } from "@/store/hooks/redux";
 import { getExerciseList, updateExercise, getExerciseById } from "@/store/slices/exercise";
 import React, { useEffect, useState, useCallback } from "react";
@@ -27,6 +28,10 @@ export default function ExerciseManagement() {
   // Edit state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [exerciseToEdit, setExerciseToEdit] = useState<any>(null);
+  
+  // View state
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [exerciseToView, setExerciseToView] = useState<any>(null);
   
   // Create state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -150,6 +155,30 @@ export default function ExerciseManagement() {
     handleRefresh(); // Refresh the list to show new data
   };
 
+  // Handle view exercise
+  const handleViewExercise = useCallback(async (exerciseId: string) => {
+    try {
+      // Fetch the full exercise details
+      const result = await dispatch(getExerciseById(exerciseId)).unwrap();
+      setExerciseToView(result.result || result);
+      setIsViewModalOpen(true);
+    } catch (error: any) {
+      console.error("Failed to fetch exercise details:", error);
+      // Fallback: use the exercise from the list if available
+      const exerciseFromList = exercises.find((ex: { id: string; }) => ex.id === exerciseId);
+      if (exerciseFromList) {
+        setExerciseToView(exerciseFromList);
+        setIsViewModalOpen(true);
+      }
+    }
+  }, [dispatch, exercises]);
+
+  // Handle view modal close
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
+    setExerciseToView(null);
+  };
+
   return (
     <div>
       <GlobalLoader loading={loading} />
@@ -175,6 +204,7 @@ export default function ExerciseManagement() {
             exercises={exercises} 
             onRefresh={handleRefresh}
             onEditExercise={handleEditExercise}
+            onViewExercise={handleViewExercise}
           />
 
           {/* Pagination */}
@@ -213,6 +243,13 @@ export default function ExerciseManagement() {
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
         onSuccess={handleCreateSuccess}
+      />
+
+      {/* Exercise View Modal */}
+      <ExerciseViewModal
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
+        exercise={exerciseToView}
       />
     </div>
   );

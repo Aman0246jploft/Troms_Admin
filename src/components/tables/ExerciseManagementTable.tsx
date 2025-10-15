@@ -10,6 +10,7 @@ import {
 import Badge from "../ui/badge/Badge";
 import Button from "../ui/button/Button";
 import ExerciseEditModal from "../modals/ExerciseEditModal";
+import ExerciseViewModal from "../modals/ExerciseViewModal";
 import { useAppDispatch } from "@/store/hooks/redux";
 import { deleteExercise, toggleExerciseStatus } from "@/store/slices/exercise";
 import { toast } from "react-hot-toast";
@@ -30,12 +31,14 @@ interface ExerciseManagementTableProps {
   exercises: Exercise[];
   onRefresh: () => void;
   onEditExercise?: (exerciseId: string) => void;
+  onViewExercise?: (exerciseId: string) => void;
 }
 
-export default function ExerciseManagementTable({ exercises, onRefresh, onEditExercise }: ExerciseManagementTableProps) {
+export default function ExerciseManagementTable({ exercises, onRefresh, onEditExercise, onViewExercise }: ExerciseManagementTableProps) {
   const dispatch = useAppDispatch();
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -62,12 +65,27 @@ export default function ExerciseManagementTable({ exercises, onRefresh, onEditEx
     } else {
       // Fallback to local modal if no prop is provided
       setSelectedExercise(exercise);
-      setIsModalOpen(true);
+      setIsEditModalOpen(true);
     }
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleViewExercise = (exercise: Exercise) => {
+    if (onViewExercise) {
+      onViewExercise(exercise.id);
+    } else {
+      // Fallback to local modal if no prop is provided
+      setSelectedExercise(exercise);
+      setIsViewModalOpen(true);
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedExercise(null);
+  };
+
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
     setSelectedExercise(null);
   };
 
@@ -94,7 +112,7 @@ export default function ExerciseManagementTable({ exercises, onRefresh, onEditEx
   };
 
   const handleUpdateSuccess = () => {
-    handleCloseModal();
+    handleCloseEditModal();
     onRefresh();
   };
 
@@ -217,6 +235,14 @@ export default function ExerciseManagementTable({ exercises, onRefresh, onEditEx
                       <div className="flex gap-2">
                         <Button
                           size="sm"
+                          variant="outline"
+                          onClick={() => handleViewExercise(exercise)}
+                          className="px-3 py-1"
+                        >
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
                           variant="primary"
                           onClick={() => handleEditExercise(exercise)}
                           className="px-3 py-1"
@@ -251,10 +277,17 @@ export default function ExerciseManagementTable({ exercises, onRefresh, onEditEx
 
       {/* Exercise Edit Modal */}
       <ExerciseEditModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
         exercise={selectedExercise}
         onSuccess={handleUpdateSuccess}
+      />
+
+      {/* Exercise View Modal */}
+      <ExerciseViewModal
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
+        exercise={selectedExercise}
       />
     </>
   );
