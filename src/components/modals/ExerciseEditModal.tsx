@@ -83,8 +83,8 @@ interface ExerciseEditModalProps {
 }
 
 const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
-  isOpen, 
-  onClose, 
+  isOpen,
+  onClose,
   exercise,
   onSuccess,
 }) => {
@@ -106,8 +106,8 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
   } = useForm<EditExerciseFormData>({
     resolver: zodResolver(editExerciseSchema),
     defaultValues: {
-    name: "",
-    equipment: "",
+      name: "",
+      equipment: "",
       json: {
         bodyPart: "",
         equipment: "",
@@ -189,7 +189,7 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
 
     try {
       const formDataToSend = new FormData();
-      
+
       // Add text fields
       formDataToSend.append("name", data.name);
       if (data.equipment) {
@@ -201,7 +201,7 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
       if (data.status) {
         formDataToSend.append("status", data.status);
       }
-      
+
       // Add files if selected
       if (gifFile) {
         formDataToSend.append("gifFile", gifFile);
@@ -209,7 +209,7 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
       if (pngFile) {
         formDataToSend.append("pngFile", pngFile);
       }
-      
+
       // Add existing URLs if no new files are selected
       if (!gifFile && exercise.gifUrl) {
         formDataToSend.append("gifUrl", exercise.gifUrl);
@@ -222,7 +222,7 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
         id: exercise.id,
         formData: formDataToSend
       })).unwrap();
-      
+
       toast.success("Exercise updated successfully!");
       handleClose();
       onSuccess();
@@ -268,17 +268,17 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Exercise Name *
-          </label>
+              </label>
               <Controller
                 name="name"
                 control={control}
                 render={({ field }) => (
-          <input
+                  <input
                     {...field}
-            type="text"
+                    type="text"
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     placeholder="Enter exercise name"
                   />
@@ -287,19 +287,19 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
               {errors.name && (
                 <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
               )}
-        </div>
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Equipment
-          </label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Equipment
+              </label>
               <Controller
                 name="equipment"
                 control={control}
                 render={({ field }) => (
-          <input
+                  <input
                     {...field}
-            type="text"
+                    type="text"
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     placeholder="Enter equipment"
                   />
@@ -309,7 +309,7 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
                 <p className="mt-1 text-sm text-red-600">{errors.equipment.message}</p>
               )}
             </div>
-        </div>
+          </div>
 
           {/* JSON Details */}
           <div className="border-t pt-6">
@@ -318,10 +318,10 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Body Part *
-          </label>
+                </label>
                 <Controller
                   name="json.bodyPart"
                   control={control}
@@ -367,18 +367,18 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
                 />
                 {errors.json?.target && (
                   <p className="mt-1 text-sm text-red-600">{errors.json.target.message}</p>
-          )}
-        </div>
+                )}
+              </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   JSON Equipment *
-          </label>
+                </label>
                 <Controller
                   name="json.equipment"
                   control={control}
                   render={({ field }) => (
-          <input
+                    <input
                       {...field}
                       type="text"
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
@@ -388,18 +388,18 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
                 />
                 {errors.json?.equipment && (
                   <p className="mt-1 text-sm text-red-600">{errors.json.equipment.message}</p>
-          )}
-        </div>
+                )}
+              </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Difficulty
-          </label>
+                </label>
                 <Controller
                   name="json.difficulty"
                   control={control}
                   render={({ field }) => (
-          <select
+                    <select
                       {...field}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     >
@@ -407,15 +407,15 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
                       <option value="beginner">Beginner</option>
                       <option value="intermediate">Intermediate</option>
                       <option value="advanced">Advanced</option>
-          </select>
+                    </select>
                   )}
                 />
-        </div>
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Category
-            </label>
+                </label>
                 <Controller
                   name="json.category"
                   control={control}
@@ -429,7 +429,7 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
                   )}
                 />
               </div>
-                  </div>
+            </div>
 
             <div className="mt-6">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -504,7 +504,7 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
                           ))}
                         </div>
                       )}
-                      
+
                       {/* Add new instruction */}
                       <div className="flex space-x-2">
                         <input
@@ -563,18 +563,26 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   GIF Animation
                 </label>
-                
+
                 {/* Current GIF Display */}
                 {!gifFile && exercise.gifUrl && (
                   <div className="mb-4">
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Current GIF:</p>
                     <div className="relative group">
                       <div className="w-full h-48 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600">
-                        <img 
-                          src={exercise.gifUrl} 
-                          alt="Current GIF" 
+                        {/* {JSON.stringify(exercise.gifUrl)} */}
+
+                        <img
+                          src={
+                            exercise.gifUrl.startsWith("http")
+                              ? exercise.gifUrl
+                              : `${process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/v1$/, "")}${exercise.gifUrl}`
+                          }
+                          alt="Current GIF"
                           className="w-full h-full object-cover"
                         />
+
+
                       </div>
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <span className="bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
@@ -601,7 +609,7 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
                   >
                     {gifFile ? "Change GIF" : "Choose New GIF"}
                   </button>
-                  
+
                   {gifFile && (
                     <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                       <div className="flex items-center justify-between">
@@ -640,18 +648,26 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   PNG Image
                 </label>
-                
+
                 {/* Current PNG Display */}
                 {!pngFile && exercise.pngUrl && (
                   <div className="mb-4">
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Current Image:</p>
                     <div className="relative group">
                       <div className="w-full h-48 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600">
-                        <img 
-                          src={exercise.pngUrl} 
-                          alt="Current Image" 
+
+
+                        <img
+                          src={
+                            exercise.pngUrl.startsWith("http")
+                              ? exercise.pngUrl
+                              : `${process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/v1$/, "")}${exercise.pngUrl}`
+                          }
+                          alt="Current pngUrl"
                           className="w-full h-full object-cover"
                         />
+
+
                       </div>
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <span className="bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
@@ -678,7 +694,7 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
                   >
                     {pngFile ? "Change Image" : "Choose New Image"}
                   </button>
-                  
+
                   {pngFile && (
                     <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                       <div className="flex items-center justify-between">
@@ -755,21 +771,21 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = ({
           {/* Form Actions */}
           <div className="flex justify-end space-x-4 pt-6 border-t">
             <button
-            type="button"
+              type="button"
               onClick={handleClose}
               className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Cancel
+            >
+              Cancel
             </button>
             <button
-            type="submit"
-            disabled={updating}
+              type="submit"
+              disabled={updating}
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {updating ? "Updating..." : "Update Exercise"}
+            >
+              {updating ? "Updating..." : "Update Exercise"}
             </button>
-        </div>
-      </form>
+          </div>
+        </form>
       </div>
 
     </Modal>

@@ -124,11 +124,14 @@ const WorkoutPlanCreateModal: React.FC<WorkoutPlanCreateModalProps> = ({
 
   const onSubmit = async (data: CreateWorkoutPlanFormData) => {
     try {
+      console.log("hellow")
       // Validate that all days have at least one exercise
       const workoutDays = Object.keys(data.workouts);
       const emptyDays = workoutDays.filter(day => !data.workouts[day] || data.workouts[day].length === 0);
+      console.log("emptyDays",emptyDays)
       
       if (emptyDays.length > 0) {
+        console.log(`Please add at least one exercise to: ${emptyDays.join(", ")}`)
         toast.error(`Please add at least one exercise to: ${emptyDays.join(", ")}`);
         return;
       }
