@@ -187,7 +187,7 @@ export default function WorkoutPlanManagement() {
           {/* No results message */}
           {!loading && workoutPlanAdmins.length === 0 && (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              {searchKeyword ? `No workout plans found for "${searchKeyword}"` : "No workout plans found"}
+              {/* {searchKeyword ? `No workout plans found for "${searchKeyword}"` : "No workout plans found"} */}
             </div>
           )}
         </ComponentCard>

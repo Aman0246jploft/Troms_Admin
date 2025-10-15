@@ -224,7 +224,7 @@ export default function ExerciseManagement() {
           {/* No results message */}
           {!loading && exercises.length === 0 && (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              {searchKeyword ? `No exercises found for "${searchKeyword}"` : "No exercises found"}
+              {/* {searchKeyword ? `No exercises found for "${searchKeyword}"` : "No exercises found"} */}
             </div>
           )}
         </ComponentCard>
