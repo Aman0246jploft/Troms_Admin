@@ -153,12 +153,12 @@ export default function ExerciseManagementTable({ exercises, onRefresh, onEditEx
                   >
                     Status
                   </TableCell>
-                  {/* <TableCell
+                  <TableCell
                     isHeader
                     className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                   >
                     Media
-                  </TableCell> */}
+                  </TableCell>
                   <TableCell
                     isHeader
                     className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"

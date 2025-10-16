@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks/redux";
 import { createWorkoutPlanAdmin } from "@/store/slices/workoutPlanAdmin";
 import { toast } from "react-hot-toast";
 import { Modal } from "../ui/modal";
-import { Plus, Trash2, X, Search, ChevronDown } from "lucide-react";
+import { Plus, Trash2, X, Search, ChevronDown, ChevronUp, ChevronDown as ChevronDownIcon } from "lucide-react";
 
 // Validation schema matching backend
 const createWorkoutPlanSchema = z.object({
