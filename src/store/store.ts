@@ -5,6 +5,7 @@ import contentManagementReducer from '@/store/slices/contentManagement';
 import contactUsReducer from '@/store/slices/contactUs';
 import exerciseReducer from '@/store/slices/exercise';
 import workoutPlanAdminReducer from '@/store/slices/workoutPlanAdmin';
+import feedbackReducer from '@/store/slices/feedback';
 
 // Custom middleware to log store changes
 const loggerMiddleware = (storeAPI: any) => (next: any) => (action: any) => {
@@ -21,7 +22,8 @@ export const store = configureStore({
     contentManagement: contentManagementReducer,
     contactUs: contactUsReducer,
     exercise: exerciseReducer,
-    workoutPlanAdmin: workoutPlanAdminReducer
+    workoutPlanAdmin: workoutPlanAdminReducer,
+    feedback: feedbackReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(loggerMiddleware),

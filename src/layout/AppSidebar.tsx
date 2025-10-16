@@ -16,7 +16,8 @@ import {
   MessageSquare,
   ChevronDown,
   Dumbbell,
-  Calendar
+  Calendar,
+  Star
 } from "lucide-react";
 
 type NavItem = {
@@ -137,6 +138,11 @@ const AppSidebar: React.FC = () => {
     icon: <MessageSquare size={20} />, // Contact Us Management
     name: "Contact Us",
     path: "/contactUs",
+  },
+  {
+    icon: <Star size={20} />, // Feedback Management
+    name: "Feedback Management",
+    path: "/feedbackManagement",
   },
   {
     icon: <FileText size={20} />, // Content Management
