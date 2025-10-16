@@ -207,23 +207,59 @@ export default function ExerciseManagementTable({ exercises, onRefresh, onEditEx
                     </TableCell>
 
                     {/* Media */}
-                    {/* <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      <div className="flex gap-2">
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      <div className="flex items-center gap-2">
                         {exercise.gifUrl && (
-                          <span className="px-2 py-1 rounded-md bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-xs">
-                            GIF
-                          </span>
+                          <a
+                            href={
+                              exercise.gifUrl.startsWith("http")
+                                ? exercise.gifUrl
+                                : `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1$/, "") || process.env.NEXT_PUBLIC_API_URL || ""}${exercise.gifUrl}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <img
+                              src={
+                                exercise.gifUrl.startsWith("http")
+                                  ? exercise.gifUrl
+                                  : `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1$/, "") || process.env.NEXT_PUBLIC_API_URL || ""}${exercise.gifUrl}`
+                              }
+                              alt="Exercise GIF"
+                              className="h-10 w-10 rounded object-contain border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:opacity-80 transition"
+                            />
+                          </a>
                         )}
+
                         {exercise.pngUrl && (
-                          <span className="px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs">
-                            PNG
-                          </span>
+                          <a
+                            href={
+                              exercise.pngUrl.startsWith("http")
+                                ? exercise.pngUrl
+                                : `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1$/, "") || process.env.NEXT_PUBLIC_API_URL || ""}${exercise.pngUrl}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <img
+                              src={
+                                exercise.pngUrl.startsWith("http")
+                                  ? exercise.pngUrl
+                                  : `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1$/, "") || process.env.NEXT_PUBLIC_API_URL || ""}${exercise.pngUrl}`
+                              }
+                              alt="Exercise Image"
+                              className="h-10 w-10 rounded object-contain border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:opacity-80 transition"
+                            />
+                          </a>
                         )}
+
                         {!exercise.gifUrl && !exercise.pngUrl && (
                           <span className="text-gray-400 text-xs">No media</span>
                         )}
                       </div>
-                    </TableCell> */}
+                    </TableCell>
+
+
 
                     {/* Created Date */}
                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
