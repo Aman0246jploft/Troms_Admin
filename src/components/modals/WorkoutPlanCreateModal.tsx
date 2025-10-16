@@ -149,6 +149,41 @@ const WorkoutPlanCreateModal: React.FC<WorkoutPlanCreateModalProps> = ({
     });
   };
 
+  const moveExerciseUp = (day: string, exerciseIndex: number) => {
+    if (exerciseIndex === 0) return; // Already at the top
+    
+    const currentWorkouts = watch("workouts");
+    const dayExercises = currentWorkouts[day] || [];
+    const updatedExercises = [...dayExercises];
+    
+    // Swap with the exercise above
+    [updatedExercises[exerciseIndex - 1], updatedExercises[exerciseIndex]] = 
+    [updatedExercises[exerciseIndex], updatedExercises[exerciseIndex - 1]];
+    
+    setValue("workouts", {
+      ...currentWorkouts,
+      [day]: updatedExercises,
+    });
+  };
+
+  const moveExerciseDown = (day: string, exerciseIndex: number) => {
+    const currentWorkouts = watch("workouts");
+    const dayExercises = currentWorkouts[day] || [];
+    
+    if (exerciseIndex === dayExercises.length - 1) return; // Already at the bottom
+    
+    const updatedExercises = [...dayExercises];
+    
+    // Swap with the exercise below
+    [updatedExercises[exerciseIndex], updatedExercises[exerciseIndex + 1]] = 
+    [updatedExercises[exerciseIndex + 1], updatedExercises[exerciseIndex]];
+    
+    setValue("workouts", {
+      ...currentWorkouts,
+      [day]: updatedExercises,
+    });
+  };
+
   const onSubmit = async (data: CreateWorkoutPlanFormData) => {
     try {
       // Clear previous errors
@@ -384,7 +419,7 @@ const WorkoutPlanCreateModal: React.FC<WorkoutPlanCreateModalProps> = ({
                           const exerciseErrors = fieldErrors[fieldKey] || [];
                           
                           return (
-                          <div key={exerciseIndex} className="grid grid-cols-1 md:grid-cols-6 gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                          <div key={exerciseIndex} className="grid grid-cols-1 md:grid-cols-7 gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
                             {/* Exercise Selection */}
                             <div className="md:col-span-2">
                               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -523,30 +558,64 @@ const WorkoutPlanCreateModal: React.FC<WorkoutPlanCreateModalProps> = ({
                             </div>
 
                             {/* Rest */}
-                            <div className="flex items-end">
-                              <div className="flex-1">
-                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                  Rest (sec)
-                                </label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={exercise.rest || ""}
-                                  onChange={(e) => updateExerciseInDay(day, exerciseIndex, "rest", parseInt(e.target.value) || 0)}
-                                  className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
-                                    exerciseErrors.some(error => error.includes("rest")) 
-                                      ? "border-red-500 dark:border-red-500" 
-                                      : "border-gray-300 dark:border-gray-600"
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Rest (sec)
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={exercise.rest || ""}
+                                onChange={(e) => updateExerciseInDay(day, exerciseIndex, "rest", parseInt(e.target.value) || 0)}
+                                className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
+                                  exerciseErrors.some(error => error.includes("rest")) 
+                                    ? "border-red-500 dark:border-red-500" 
+                                    : "border-gray-300 dark:border-gray-600"
+                                }`}
+                              />
+                              {exerciseErrors.some(error => error.includes("rest")) && (
+                                <p className="text-xs text-red-500 mt-1">Please enter valid rest time (minimum 0)</p>
+                              )}
+                            </div>
+
+                            {/* Reorder Controls */}
+                            <div className="flex flex-col items-center justify-center space-y-1">
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Order
+                              </label>
+                              <div className="flex flex-col space-y-1">
+                                <button
+                                  type="button"
+                                  onClick={() => moveExerciseUp(day, exerciseIndex)}
+                                  disabled={exerciseIndex === 0}
+                                  className={`p-1 rounded ${
+                                    exerciseIndex === 0
+                                      ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                                      : "text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-600"
                                   }`}
-                                />
-                                {exerciseErrors.some(error => error.includes("rest")) && (
-                                  <p className="text-xs text-red-500 mt-1">Please enter valid rest time (minimum 0)</p>
-                                )}
+                                  title="Move up"
+                                >
+                                  <ChevronUp className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveExerciseDown(day, exerciseIndex)}
+                                  disabled={exerciseIndex === dayExercises.length - 1}
+                                  className={`p-1 rounded ${
+                                    exerciseIndex === dayExercises.length - 1
+                                      ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                                      : "text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                  }`}
+                                  title="Move down"
+                                >
+                                  <ChevronDownIcon className="w-4 h-4" />
+                                </button>
                               </div>
                               <button
                                 type="button"
                                 onClick={() => removeExerciseFromDay(day, exerciseIndex)}
-                                className="ml-2 p-1 text-red-600 hover:text-red-800"
+                                className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                title="Remove exercise"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
