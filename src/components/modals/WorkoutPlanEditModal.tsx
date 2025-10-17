@@ -13,7 +13,7 @@ import { Plus, Trash2, X, Search, ChevronDown, ChevronUp, ChevronDown as Chevron
 // Validation schema matching backend
 const updateWorkoutPlanSchema = z.object({
   totalDays: z.number().min(1, "Total days must be at least 1").max(30, "Total days cannot exceed 30"),
-  location: z.enum(["HOME", "GYM", "OUTDOOR"], {
+  location: z.enum(["HOME", "GYM", "OUTDOORS"], {
     message: "Location is required"
   }),
   workouts: z.record(z.string(), z.array(z.object({
@@ -22,6 +22,8 @@ const updateWorkoutPlanSchema = z.object({
     reps: z.number().min(1, "Reps must be at least 1"),
     duration: z.number().min(0, "Duration must be 0 or positive"),
     rest: z.number().min(0, "Rest time must be 0 or positive"),
+    order: z.number().min(1, "Order must be at least 1").optional(),
+    replacement: z.number().min(0, "Replacement must be 0 or positive").optional(),
   }))),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
@@ -35,6 +37,270 @@ interface WorkoutPlanEditModalProps {
   onSuccess: () => void;
   exercises: any[];
 }
+
+// Helper function to render exercise row
+const renderExerciseRow = (
+  day: string,
+  exerciseIndex: number,
+  exercise: any,
+  fieldErrors: {[key: string]: string[]},
+  openDropdowns: {[key: string]: boolean},
+  dropdownRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>,
+  exerciseSearchTerm: string,
+  setExerciseSearchTerm: (term: string) => void,
+  toggleDropdown: (fieldKey: string) => void,
+  closeDropdown: (fieldKey: string) => void,
+  updateExerciseInDay: (day: string, exerciseIndex: number, field: string, value: any) => void,
+  removeExerciseFromDay: (day: string, exerciseIndex: number) => void,
+  moveExerciseUp: (day: string, exerciseIndex: number) => void,
+  moveExerciseDown: (day: string, exerciseIndex: number) => void,
+  dayExercises: any[],
+  addReplacementExercise: (day: string, baseExerciseIndex: number) => void,
+  exercises: any[],
+  isReplacement: boolean = false
+) => {
+  const fieldKey = `${day}-${exerciseIndex}`;
+  const exerciseErrors = fieldErrors[fieldKey] || [];
+  
+  return (
+    <div className={`grid grid-cols-1 md:grid-cols-7 gap-3 p-3 rounded-md ${
+      isReplacement 
+        ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800" 
+        : "bg-gray-50 dark:bg-gray-700"
+    }`}>
+      {/* Exercise Selection */}
+      <div className="md:col-span-2">
+        <div className="flex items-center gap-2 mb-1">
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+            Exercise
+          </label>
+          {isReplacement && (
+            <span className="px-1 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-xs rounded">
+              Replacement {exercise.replacement}
+            </span>
+          )}
+        </div>
+        <div className="relative" ref={(el) => { dropdownRefs.current[fieldKey] = el; }}>
+          <button
+            type="button"
+            onClick={() => toggleDropdown(fieldKey)}
+            className={`w-full flex items-center justify-between px-3 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
+              exerciseErrors.some(error => error.includes("exercise")) 
+                ? "border-red-500 dark:border-red-500" 
+                : "border-gray-300 dark:border-gray-600"
+            }`}
+          >
+            <span className="truncate">
+              {exercise.exerciseId 
+                ? exercises.find(ex => ex.id === exercise.exerciseId)?.name || "Select exercise"
+                : "Select exercise"
+              }
+            </span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${openDropdowns[fieldKey] ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {/* Dropdown */}
+          {openDropdowns[fieldKey] && (
+            <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-b-md shadow-lg z-20">
+              {/* Search Input */}
+              <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search exercises..."
+                    value={exerciseSearchTerm}
+                    onChange={(e) => setExerciseSearchTerm(e.target.value)}
+                    className="w-full pl-7 pr-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              
+              {/* Options */}
+              <div className="max-h-40 overflow-y-auto">
+                {exercises.filter(exercise =>
+                  exercise.name?.toLowerCase().includes(exerciseSearchTerm.toLowerCase())
+                ).length > 0 ? (
+                  exercises.filter(exercise =>
+                    exercise.name?.toLowerCase().includes(exerciseSearchTerm.toLowerCase())
+                  ).map((ex) => (
+                    <div
+                      key={ex.id}
+                      onClick={() => {
+                        updateExerciseInDay(day, exerciseIndex, "exerciseId", ex.id);
+                        closeDropdown(fieldKey);
+                        setExerciseSearchTerm("");
+                      }}
+                      className={`px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer ${
+                        exercise.exerciseId === ex.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''
+                      }`}
+                    >
+                      {ex.name}
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                    {exerciseSearchTerm ? `No exercises found matching "${exerciseSearchTerm}"` : "No exercises available"}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        {exerciseErrors.some(error => error.includes("exercise")) && (
+          <p className="text-xs text-red-500 mt-1">Please select an exercise</p>
+        )}
+      </div>
+
+      {/* Sets */}
+      <div>
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Sets
+        </label>
+        <input
+          type="number"
+          min="1"
+          value={exercise.sets || ""}
+          onChange={(e) => updateExerciseInDay(day, exerciseIndex, "sets", parseInt(e.target.value) || 0)}
+          className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
+            exerciseErrors.some(error => error.includes("sets")) 
+              ? "border-red-500 dark:border-red-500" 
+              : "border-gray-300 dark:border-gray-600"
+          }`}
+        />
+        {exerciseErrors.some(error => error.includes("sets")) && (
+          <p className="text-xs text-red-500 mt-1">Please enter valid sets (minimum 1)</p>
+        )}
+      </div>
+
+      {/* Reps */}
+      <div>
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Reps
+        </label>
+        <input
+          type="number"
+          min="1"
+          value={exercise.reps || ""}
+          onChange={(e) => updateExerciseInDay(day, exerciseIndex, "reps", parseInt(e.target.value) || 0)}
+          className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
+            exerciseErrors.some(error => error.includes("reps")) 
+              ? "border-red-500 dark:border-red-500" 
+              : "border-gray-300 dark:border-gray-600"
+          }`}
+        />
+        {exerciseErrors.some(error => error.includes("reps")) && (
+          <p className="text-xs text-red-500 mt-1">Please enter valid reps (minimum 1)</p>
+        )}
+      </div>
+
+      {/* Duration */}
+      <div>
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Duration (sec)
+        </label>
+        <input
+          type="number"
+          min="0"
+          value={exercise.duration || ""}
+          onChange={(e) => updateExerciseInDay(day, exerciseIndex, "duration", parseInt(e.target.value) || 0)}
+          className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
+            exerciseErrors.some(error => error.includes("duration")) 
+              ? "border-red-500 dark:border-red-500" 
+              : "border-gray-300 dark:border-gray-600"
+          }`}
+        />
+        {exerciseErrors.some(error => error.includes("duration")) && (
+          <p className="text-xs text-red-500 mt-1">Please enter valid duration (minimum 0)</p>
+        )}
+      </div>
+
+      {/* Rest */}
+      <div>
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Rest (sec)
+        </label>
+        <input
+          type="number"
+          min="0"
+          value={exercise.rest || ""}
+          onChange={(e) => updateExerciseInDay(day, exerciseIndex, "rest", parseInt(e.target.value) || 0)}
+          className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
+            exerciseErrors.some(error => error.includes("rest")) 
+              ? "border-red-500 dark:border-red-500" 
+              : "border-gray-300 dark:border-gray-600"
+          }`}
+        />
+        {exerciseErrors.some(error => error.includes("rest")) && (
+          <p className="text-xs text-red-500 mt-1">Please enter valid rest time (minimum 0)</p>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-col items-center justify-center space-y-2">
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Actions
+        </label>
+        
+        {/* Add Replacement Button - only for main exercises */}
+        {!isReplacement && (
+          <button
+            type="button"
+            onClick={() => addReplacementExercise(day, exerciseIndex)}
+            className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+            title="Add replacement exercise"
+          >
+            <Plus className="w-3 h-3" />
+            Replacement
+          </button>
+        )}
+        
+        {/* Reorder Controls - only for main exercises */}
+        {!isReplacement && (
+          <div className="flex flex-col space-y-1">
+            <button
+              type="button"
+              onClick={() => moveExerciseUp(day, exerciseIndex)}
+              disabled={exerciseIndex === 0}
+              className={`p-1 rounded ${
+                exerciseIndex === 0
+                  ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                  : "text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-600"
+              }`}
+              title="Move up"
+            >
+              <ChevronUp className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => moveExerciseDown(day, exerciseIndex)}
+              disabled={exerciseIndex === dayExercises.length - 1}
+              className={`p-1 rounded ${
+                exerciseIndex === dayExercises.length - 1
+                  ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                  : "text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-600"
+              }`}
+              title="Move down"
+            >
+              <ChevronDownIcon className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        
+        {/* Remove Button */}
+        <button
+          type="button"
+          onClick={() => removeExerciseFromDay(day, exerciseIndex)}
+          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+          title="Remove exercise"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const WorkoutPlanEditModal: React.FC<WorkoutPlanEditModalProps> = ({
   isOpen,
@@ -87,10 +353,24 @@ selectedWorkoutPlanAdmin } = useAppSelector((state) => state?.workoutPlanAdmin);
       // Handle both direct workoutPlan and nested result structure
       const planData = workoutPlan.result || workoutPlan;
       setTotalDays(planData.totalDays);
+      
+      // Process workouts to ensure they have order and replacement fields
+      const processedWorkouts = {};
+      if (planData.workouts) {
+        Object.keys(planData.workouts).forEach(day => {
+          const dayExercises = planData.workouts[day] || [];
+          processedWorkouts[day] = dayExercises.map((exercise, index) => ({
+            ...exercise,
+            order: exercise.order || index + 1,
+            replacement: exercise.replacement || 0,
+          }));
+        });
+      }
+      
       reset({
         totalDays: planData.totalDays,
         location: planData.location,
-        workouts: planData.workouts || {},
+        workouts: processedWorkouts,
         status: planData.status || "ACTIVE",
       });
     }
@@ -122,12 +402,19 @@ selectedWorkoutPlanAdmin } = useAppSelector((state) => state?.workoutPlanAdmin);
     const currentWorkouts = watch("workouts");
     const dayExercises = currentWorkouts[day] || [];
     
+    // Find the highest order number to ensure we don't duplicate orders
+    const maxOrder = dayExercises.length > 0 
+      ? Math.max(...dayExercises.map(ex => ex.order || 0))
+      : 0;
+    
     const newExercise = {
       exerciseId: "",
       sets: 3,
       reps: 12,
       duration: 0,
       rest: 60,
+      order: maxOrder + 1, // Use the next available order number
+      replacement: 0,
     };
 
     setValue("workouts", {
@@ -136,14 +423,60 @@ selectedWorkoutPlanAdmin } = useAppSelector((state) => state?.workoutPlanAdmin);
     });
   };
 
+  const addReplacementExercise = (day: string, baseExerciseIndex: number) => {
+    const currentWorkouts = watch("workouts");
+    const dayExercises = currentWorkouts[day] || [];
+    const baseExercise = dayExercises[baseExerciseIndex];
+    
+    // Find the highest replacement number for this order
+    const sameOrderExercises = dayExercises.filter(ex => ex.order === baseExercise.order);
+    const maxReplacement = sameOrderExercises.length > 0 
+      ? Math.max(...sameOrderExercises.map(ex => ex.replacement || 0))
+      : 0;
+    
+    const newReplacementExercise = {
+      exerciseId: "",
+      sets: baseExercise.sets,
+      reps: baseExercise.reps,
+      duration: baseExercise.duration,
+      rest: baseExercise.rest,
+      order: baseExercise.order, // Keep the same order as the base exercise
+      replacement: maxReplacement + 1,
+    };
+
+    setValue("workouts", {
+      ...currentWorkouts,
+      [day]: [...dayExercises, newReplacementExercise],
+    });
+  };
+
   const removeExerciseFromDay = (day: string, exerciseIndex: number) => {
     const currentWorkouts = watch("workouts");
     const dayExercises = currentWorkouts[day] || [];
-    const updatedExercises = dayExercises.filter((_, index) => index !== exerciseIndex);
+    const exerciseToRemove = dayExercises[exerciseIndex];
+    
+    // If removing a main exercise, also remove all its replacements
+    let updatedExercises;
+    if (exerciseToRemove.replacement === 0) {
+      // Remove main exercise and all its replacements
+      updatedExercises = dayExercises.filter((_, index) => {
+        const exercise = dayExercises[index];
+        return exercise.order !== exerciseToRemove.order;
+      });
+    } else {
+      // Just remove the replacement exercise
+      updatedExercises = dayExercises.filter((_, index) => index !== exerciseIndex);
+    }
+    
+    // Reorder exercises after removal to maintain sequential order numbers
+    const reorderedExercises = updatedExercises.map((exercise, index) => ({
+      ...exercise,
+      order: index + 1,
+    }));
     
     setValue("workouts", {
       ...currentWorkouts,
-      [day]: updatedExercises,
+      [day]: reorderedExercises,
     });
   };
 
@@ -168,11 +501,32 @@ selectedWorkoutPlanAdmin } = useAppSelector((state) => state?.workoutPlanAdmin);
     
     const currentWorkouts = watch("workouts");
     const dayExercises = currentWorkouts[day] || [];
-    const updatedExercises = [...dayExercises];
+    const currentExercise = dayExercises[exerciseIndex];
     
-    // Swap with the exercise above
-    [updatedExercises[exerciseIndex - 1], updatedExercises[exerciseIndex]] = 
-    [updatedExercises[exerciseIndex], updatedExercises[exerciseIndex - 1]];
+    // Only allow moving main exercises (not replacements)
+    if (currentExercise.replacement && currentExercise.replacement > 0) return;
+    
+    // Find the previous main exercise
+    let prevMainExerciseIndex = -1;
+    for (let i = exerciseIndex - 1; i >= 0; i--) {
+      const exercise = dayExercises[i];
+      if (!exercise.replacement || exercise.replacement === 0) {
+        prevMainExerciseIndex = i;
+        break;
+      }
+    }
+    
+    if (prevMainExerciseIndex === -1) return; // No previous main exercise found
+    
+    // Swap the order values of the two main exercises
+    const updatedExercises = dayExercises.map((exercise, index) => {
+      if (index === exerciseIndex) {
+        return { ...exercise, order: dayExercises[prevMainExerciseIndex].order };
+      } else if (index === prevMainExerciseIndex) {
+        return { ...exercise, order: currentExercise.order };
+      }
+      return exercise;
+    });
     
     setValue("workouts", {
       ...currentWorkouts,
@@ -183,14 +537,32 @@ selectedWorkoutPlanAdmin } = useAppSelector((state) => state?.workoutPlanAdmin);
   const moveExerciseDown = (day: string, exerciseIndex: number) => {
     const currentWorkouts = watch("workouts");
     const dayExercises = currentWorkouts[day] || [];
+    const currentExercise = dayExercises[exerciseIndex];
     
-    if (exerciseIndex === dayExercises.length - 1) return; // Already at the bottom
+    // Only allow moving main exercises (not replacements)
+    if (currentExercise.replacement && currentExercise.replacement > 0) return;
     
-    const updatedExercises = [...dayExercises];
+    // Find the next main exercise
+    let nextMainExerciseIndex = -1;
+    for (let i = exerciseIndex + 1; i < dayExercises.length; i++) {
+      const exercise = dayExercises[i];
+      if (!exercise.replacement || exercise.replacement === 0) {
+        nextMainExerciseIndex = i;
+        break;
+      }
+    }
     
-    // Swap with the exercise below
-    [updatedExercises[exerciseIndex], updatedExercises[exerciseIndex + 1]] = 
-    [updatedExercises[exerciseIndex + 1], updatedExercises[exerciseIndex]];
+    if (nextMainExerciseIndex === -1) return; // No next main exercise found
+    
+    // Swap the order values of the two main exercises
+    const updatedExercises = dayExercises.map((exercise, index) => {
+      if (index === exerciseIndex) {
+        return { ...exercise, order: dayExercises[nextMainExerciseIndex].order };
+      } else if (index === nextMainExerciseIndex) {
+        return { ...exercise, order: currentExercise.order };
+      }
+      return exercise;
+    });
     
     setValue("workouts", {
       ...currentWorkouts,
@@ -377,7 +749,7 @@ selectedWorkoutPlanAdmin } = useAppSelector((state) => state?.workoutPlanAdmin);
                     <option value="">Select location</option>
                     <option value="HOME">Home</option>
                     <option value="GYM">Gym</option>
-                    <option value="OUTDOOR">Outdoor</option>
+                    <option value="OUTDOORS">OUTDOORS</option>
                   </select>
                 )}
               />
@@ -438,216 +810,68 @@ selectedWorkoutPlanAdmin } = useAppSelector((state) => state?.workoutPlanAdmin);
                         No exercises added yet. Click "Add Exercise" to get started.
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        {dayExercises.map((exercise, exerciseIndex) => {
-                          const fieldKey = `${day}-${exerciseIndex}`;
-                          const exerciseErrors = fieldErrors[fieldKey] || [];
-                          
-                          return (
-                          <div key={exerciseIndex} className="grid grid-cols-1 md:grid-cols-7 gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                            {/* Exercise Selection */}
-                            <div className="md:col-span-2">
-                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Exercise
-                              </label>
-                              <div className="relative" ref={(el) => { dropdownRefs.current[fieldKey] = el; }}>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleDropdown(fieldKey)}
-                                  className={`w-full flex items-center justify-between px-3 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
-                                    exerciseErrors.some(error => error.includes("exercise")) 
-                                      ? "border-red-500 dark:border-red-500" 
-                                      : "border-gray-300 dark:border-gray-600"
-                                  }`}
-                                >
-                                  <span className="truncate">
-                                    {exercise.exerciseId 
-                                      ? exercises.find(ex => ex.id === exercise.exerciseId)?.name || "Select exercise"
-                                      : "Select exercise"
-                                    }
-                                  </span>
-                                  <ChevronDown className={`h-4 w-4 transition-transform ${openDropdowns[fieldKey] ? 'rotate-180' : ''}`} />
-                                </button>
-                                
-                                {/* Dropdown */}
-                                {openDropdowns[fieldKey] && (
-                                  <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-b-md shadow-lg z-20">
-                                    {/* Search Input */}
-                                    <div className="p-2 border-b border-gray-200 dark:border-gray-600">
-                                      <div className="relative">
-                                        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
-                                        <input
-                                          type="text"
-                                          placeholder="Search exercises..."
-                                          value={exerciseSearchTerm}
-                                          onChange={(e) => setExerciseSearchTerm(e.target.value)}
-                                          className="w-full pl-7 pr-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white"
-                                          autoFocus
-                                        />
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Options */}
-                                    <div className="max-h-40 overflow-y-auto">
-                                      {filteredExercises.length > 0 ? (
-                                        filteredExercises.map((ex) => (
-                                          <div
-                                            key={ex.id}
-                                            onClick={() => {
-                                              updateExerciseInDay(day, exerciseIndex, "exerciseId", ex.id);
-                                              closeDropdown(fieldKey);
-                                              setExerciseSearchTerm("");
-                                            }}
-                                            className={`px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer ${
-                                              exercise.exerciseId === ex.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''
-                                            }`}
-                                          >
-                                            {ex.name}
-                                          </div>
-                                        ))
-                                      ) : (
-                                        <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                                          {exerciseSearchTerm ? `No exercises found matching "${exerciseSearchTerm}"` : "No exercises available"}
-                                        </div>
-                                      )}
-                                    </div>
+                      <div className="space-y-4">
+                        {(() => {
+                          // Group exercises by order
+                          const groupedExercises = dayExercises.reduce((groups, exercise, index) => {
+                            const order = exercise.order || index + 1;
+                            if (!groups[order]) {
+                              groups[order] = [];
+                            }
+                            groups[order].push({ ...exercise, originalIndex: index });
+                            return groups;
+                          }, {} as { [key: number]: any[] });
+
+                          return Object.keys(groupedExercises)
+                            .sort((a, b) => parseInt(a) - parseInt(b))
+                            .map(order => {
+                              const orderExercises = groupedExercises[parseInt(order)];
+                              const mainExercise = orderExercises.find(ex => !ex.replacement || ex.replacement === 0);
+                              const replacementExercises = orderExercises.filter(ex => ex.replacement && ex.replacement > 0);
+
+                              return (
+                                <div key={order} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800">
+                                  {/* Order Header */}
+                                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-gray-600">
+                                    <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                      Exercise Order {order}
+                                    </h5>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                      {replacementExercises.length} replacement{replacementExercises.length !== 1 ? 's' : ''}
+                                    </span>
                                   </div>
-                                )}
-                              </div>
-                              {exerciseErrors.some(error => error.includes("exercise")) && (
-                                <p className="text-xs text-red-500 mt-1">Please select an exercise</p>
-                              )}
-                            </div>
 
-                            {/* Sets */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Sets
-                              </label>
-                              <input
-                                type="number"
-                                min="1"
-                                value={exercise.sets || ""}
-                                onChange={(e) => updateExerciseInDay(day, exerciseIndex, "sets", parseInt(e.target.value) || 0)}
-                                className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
-                                  exerciseErrors.some(error => error.includes("sets")) 
-                                    ? "border-red-500 dark:border-red-500" 
-                                    : "border-gray-300 dark:border-gray-600"
-                                }`}
-                              />
-                              {exerciseErrors.some(error => error.includes("sets")) && (
-                                <p className="text-xs text-red-500 mt-1">Please enter valid sets (minimum 1)</p>
-                              )}
-                            </div>
+                                  {/* Main Exercise */}
+                                  {mainExercise && (
+                                    <div className="mb-3">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs rounded font-medium">
+                                          Main Exercise
+                                        </span>
+                                      </div>
+                                      {renderExerciseRow(day, mainExercise.originalIndex, mainExercise, fieldErrors, openDropdowns, dropdownRefs, exerciseSearchTerm, setExerciseSearchTerm, toggleDropdown, closeDropdown, updateExerciseInDay, removeExerciseFromDay, moveExerciseUp, moveExerciseDown, dayExercises, addReplacementExercise, exercises, false)}
+                                    </div>
+                                  )}
 
-                            {/* Reps */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Reps
-                              </label>
-                              <input
-                                type="number"
-                                min="1"
-                                value={exercise.reps || ""}
-                                onChange={(e) => updateExerciseInDay(day, exerciseIndex, "reps", parseInt(e.target.value) || 0)}
-                                className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
-                                  exerciseErrors.some(error => error.includes("reps")) 
-                                    ? "border-red-500 dark:border-red-500" 
-                                    : "border-gray-300 dark:border-gray-600"
-                                }`}
-                              />
-                              {exerciseErrors.some(error => error.includes("reps")) && (
-                                <p className="text-xs text-red-500 mt-1">Please enter valid reps (minimum 1)</p>
-                              )}
-                            </div>
-
-                            {/* Duration */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Duration (sec)
-                              </label>
-                              <input
-                                type="number"
-                                min="0"
-                                value={exercise.duration || ""}
-                                onChange={(e) => updateExerciseInDay(day, exerciseIndex, "duration", parseInt(e.target.value) || 0)}
-                                className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
-                                  exerciseErrors.some(error => error.includes("duration")) 
-                                    ? "border-red-500 dark:border-red-500" 
-                                    : "border-gray-300 dark:border-gray-600"
-                                }`}
-                              />
-                              {exerciseErrors.some(error => error.includes("duration")) && (
-                                <p className="text-xs text-red-500 mt-1">Please enter valid duration (minimum 0)</p>
-                              )}
-                            </div>
-
-                            {/* Rest */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Rest (sec)
-                              </label>
-                              <input
-                                type="number"
-                                min="0"
-                                value={exercise.rest || ""}
-                                onChange={(e) => updateExerciseInDay(day, exerciseIndex, "rest", parseInt(e.target.value) || 0)}
-                                className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-600 dark:text-white ${
-                                  exerciseErrors.some(error => error.includes("rest")) 
-                                    ? "border-red-500 dark:border-red-500" 
-                                    : "border-gray-300 dark:border-gray-600"
-                                }`}
-                              />
-                              {exerciseErrors.some(error => error.includes("rest")) && (
-                                <p className="text-xs text-red-500 mt-1">Please enter valid rest time (minimum 0)</p>
-                              )}
-                            </div>
-
-                            {/* Reorder Controls */}
-                            <div className="flex flex-col items-center justify-center space-y-1">
-                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Order
-                              </label>
-                              <div className="flex flex-col space-y-1">
-                                <button
-                                  type="button"
-                                  onClick={() => moveExerciseUp(day, exerciseIndex)}
-                                  disabled={exerciseIndex === 0}
-                                  className={`p-1 rounded ${
-                                    exerciseIndex === 0
-                                      ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                                      : "text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-600"
-                                  }`}
-                                  title="Move up"
-                                >
-                                  <ChevronUp className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => moveExerciseDown(day, exerciseIndex)}
-                                  disabled={exerciseIndex === dayExercises.length - 1}
-                                  className={`p-1 rounded ${
-                                    exerciseIndex === dayExercises.length - 1
-                                      ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                                      : "text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-600"
-                                  }`}
-                                  title="Move down"
-                                >
-                                  <ChevronDownIcon className="w-4 h-4" />
-                                </button>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removeExerciseFromDay(day, exerciseIndex)}
-                                className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                title="Remove exercise"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                          );
-                        })}
+                                  {/* Replacement Exercises */}
+                                  {replacementExercises.length > 0 && (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-xs rounded font-medium">
+                                          Replacements
+                                        </span>
+                                      </div>
+                                      {replacementExercises.map((replacementExercise) => (
+                                        <div key={replacementExercise.originalIndex} className="ml-4 border-l-2 border-green-300 dark:border-green-600 pl-3">
+                                          {renderExerciseRow(day, replacementExercise.originalIndex, replacementExercise, fieldErrors, openDropdowns, dropdownRefs, exerciseSearchTerm, setExerciseSearchTerm, toggleDropdown, closeDropdown, updateExerciseInDay, removeExerciseFromDay, moveExerciseUp, moveExerciseDown, dayExercises, addReplacementExercise, exercises, true)}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            });
+                        })()}
                       </div>
                     )}
                   </div>

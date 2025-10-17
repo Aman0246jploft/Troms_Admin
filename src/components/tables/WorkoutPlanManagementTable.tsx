@@ -90,7 +90,7 @@ export default function WorkoutPlanManagementTable({
 
   const handleEditWorkoutPlan = (workoutPlan: WorkoutPlan) => {
     if (onEditWorkoutPlan) {
-      onEditWorkoutPlan(workoutPlan.id);
+      onEditWorkoutPlan(workoutPlan?.id);
     } else {
       // Fallback to local modal if no prop is provided
       setSelectedWorkoutPlan(workoutPlan);
@@ -191,16 +191,16 @@ export default function WorkoutPlanManagementTable({
               {/* Table Body */}
               <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                 {workoutPlans.map((workoutPlan) => (
-                  <TableRow key={workoutPlan.id}>
+                  <TableRow key={workoutPlan?.id}>
                     {/* Plan Details */}
                     <TableCell className="px-5 py-4 sm:px-6 text-start">
                       <div className="flex items-center gap-3">
                         <div>
                           <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                            {workoutPlan.totalDays} Day Plan
+                            {workoutPlan?.totalDays} Day Plan
                           </span>
                           <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                            {/* ID: {workoutPlan.id.slice(0, 8)}... */}
+                            {/* ID: {workoutPlan?.id.slice(0, 8)}... */}
                           </span>
                         </div>
                       </div>
@@ -208,8 +208,8 @@ export default function WorkoutPlanManagementTable({
 
                     {/* Location */}
                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      <Badge size="sm" color={getLocationColor(workoutPlan.location)}>
-                        {workoutPlan.location}
+                      <Badge size="sm" color={getLocationColor(workoutPlan?.location)}>
+                        {workoutPlan?.location}
                       </Badge>
                     </TableCell>
 
@@ -217,24 +217,24 @@ export default function WorkoutPlanManagementTable({
                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                       <div className="flex flex-col gap-1">
                         <span className="font-medium">
-                          {getTotalExercises(workoutPlan.workouts)} total
+                          {getTotalExercises(workoutPlan?.workouts)} total
                         </span>
                         <span className="text-xs text-gray-400">
-                          {Object.keys(workoutPlan.workouts).length} days
+                          {Object.keys(workoutPlan?.workouts).length} days
                         </span>
                       </div>
                     </TableCell>
 
                     {/* Status */}
                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                      <Badge size="sm" color={getStatusColor(workoutPlan.status)}>
-                        {workoutPlan.status}
+                      <Badge size="sm" color={getStatusColor(workoutPlan?.status)}>
+                        {workoutPlan?.status}
                       </Badge>
                     </TableCell>
 
                     {/* Created Date */}
                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                      {formatDate(workoutPlan.createdAt)}
+                      {formatDate(workoutPlan?.createdAt)}
                     </TableCell>
 
                     {/* Actions */}
@@ -250,16 +250,16 @@ export default function WorkoutPlanManagementTable({
                         </Button>
                         <Button
                           size="sm"
-                          variant={workoutPlan.status === "ACTIVE" ? "outline" : "primary"}
-                          onClick={() => handleToggleStatus(workoutPlan.id)}
+                          variant={workoutPlan?.status === "ACTIVE" ? "outline" : "primary"}
+                          onClick={() => handleToggleStatus(workoutPlan?.id)}
                           className="px-3 py-1"
                         >
-                          {workoutPlan.status === "ACTIVE" ? "Disable" : "Enable"}
+                          {workoutPlan?.status === "ACTIVE" ? "Disable" : "Enable"}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(workoutPlan.id, workoutPlan.totalDays, workoutPlan.location)}
+                          onClick={() => handleDelete(workoutPlan?.id, workoutPlan?.totalDays, workoutPlan?.location)}
                           className="px-3 py-1"
                         >
                           Delete
@@ -280,7 +280,7 @@ export default function WorkoutPlanManagementTable({
         onClose={handleCloseModal}
         workoutPlan={selectedWorkoutPlan}
         onSuccess={handleUpdateSuccess}
-        exercises={selectedWorkoutPlan ? Object.values(selectedWorkoutPlan.workouts).flat() : []}
+        exercises={selectedWorkoutPlan ? Object.values(selectedWorkoutPlan?.workouts).flat() : []}
       />
     </>
   );
