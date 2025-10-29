@@ -190,7 +190,7 @@ export default function FeedbackManagement() {
           )}
 
           {/* Search and Filter */}
-          <FeedbackSearchFilter 
+          {/* <FeedbackSearchFilter 
             onSearch={handleSearch}
             onRatingFilter={handleRatingFilter}
             onSortChange={handleSortChange}
@@ -199,7 +199,7 @@ export default function FeedbackManagement() {
             defaultRating={ratingFilter}
             defaultSortBy={sortBy}
             defaultOrder={order}
-          />
+          /> */}
 
           {/* Feedback Table */}
           <FeedbackTable 

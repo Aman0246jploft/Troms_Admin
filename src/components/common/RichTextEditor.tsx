@@ -34,21 +34,21 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const handleInput = () => {
     if (editorRef.current) {
       let htmlContent = editorRef.current.innerHTML;
-      
+
       // Ensure content is wrapped in HTML tags
       if (htmlContent && !htmlContent.includes('<') && htmlContent.trim() !== '') {
         // If it's plain text, wrap it in a paragraph
         htmlContent = `<p>${htmlContent}</p>`;
         editorRef.current.innerHTML = htmlContent;
       }
-      
+
       // Clean up empty paragraphs and normalize HTML
       htmlContent = htmlContent
         .replace(/<p><br><\/p>/g, '<p></p>')
         .replace(/<p>\s*<\/p>/g, '')
         .replace(/^<br>/, '')
         .trim();
-      
+
       console.log("Rich editor content:", htmlContent);
       onChange(htmlContent);
     }
@@ -61,7 +61,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       document.execCommand('insertHTML', false, '<br><br>');
       return;
     }
-    
+
     // Handle common shortcuts
     if (e.ctrlKey || e.metaKey) {
       switch (e.key) {
@@ -87,23 +87,23 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       if (editorRef.current.innerHTML === '' || editorRef.current.innerHTML === '<br>') {
         editorRef.current.innerHTML = '<p><br></p>';
       }
-      
+
       editorRef.current.focus();
       document.execCommand(command, false, value);
-      
+
       // Trigger input handler to update content
       setTimeout(() => handleInput(), 0);
     }
   };
 
   return (
-    <div className={`border border-gray-300 dark:border-gray-600 rounded-md ${className}`}>
+    <div className={`border border-gray-300  rounded-md ${className}`}>
       {/* Toolbar */}
-      <div className="border-b border-gray-300 dark:border-gray-600 p-2 flex gap-1 flex-wrap bg-gray-50 dark:bg-gray-800">
+      <div className="border-b border-gray-300  p-2 flex gap-1 flex-wrap bg-gray-50 ">
         <button
           type="button"
           onClick={() => execCommand('bold')}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 font-bold"
+          className="px-2 py-1 text-sm border border-gray-300  rounded   font-bold"
           title="Bold (Ctrl+B)"
         >
           B
@@ -111,7 +111,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <button
           type="button"
           onClick={() => execCommand('italic')}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 italic"
+          className="px-2 py-1 text-sm border border-gray-300  rounded   italic"
           title="Italic (Ctrl+I)"
         >
           I
@@ -119,16 +119,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <button
           type="button"
           onClick={() => execCommand('underline')}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 underline"
+          className="px-2 py-1 text-sm border border-gray-300  rounded   underline"
           title="Underline (Ctrl+U)"
         >
           U
         </button>
-        <div className="border-l border-gray-300 dark:border-gray-600 mx-1"></div>
+        <div className="border-l border-gray-300  mx-1"></div>
         <button
           type="button"
           onClick={() => execCommand('formatBlock', 'H1')}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="px-2 py-1 text-sm border border-gray-300  rounded  "
           title="Heading 1"
         >
           H1
@@ -136,7 +136,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <button
           type="button"
           onClick={() => execCommand('formatBlock', 'H2')}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="px-2 py-1 text-sm border border-gray-300  rounded  "
           title="Heading 2"
         >
           H2
@@ -144,16 +144,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <button
           type="button"
           onClick={() => execCommand('formatBlock', 'P')}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="px-2 py-1 text-sm border border-gray-300  rounded  "
           title="Paragraph"
         >
           P
         </button>
-        <div className="border-l border-gray-300 dark:border-gray-600 mx-1"></div>
+        <div className="border-l border-gray-300  mx-1"></div>
         <button
           type="button"
           onClick={() => execCommand('insertUnorderedList')}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="px-2 py-1 text-sm border border-gray-300  rounded  "
           title="Bullet List"
         >
           •
@@ -161,16 +161,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <button
           type="button"
           onClick={() => execCommand('insertOrderedList')}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="px-2 py-1 text-sm border border-gray-300  rounded  "
           title="Numbered List"
         >
           1.
         </button>
-        <div className="border-l border-gray-300 dark:border-gray-600 mx-1"></div>
+        <div className="border-l border-gray-300  mx-1"></div>
         <button
           type="button"
           onClick={() => execCommand('justifyLeft')}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="px-2 py-1 text-sm border border-gray-300  rounded  "
           title="Align Left"
         >
           ←
@@ -178,7 +178,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <button
           type="button"
           onClick={() => execCommand('justifyCenter')}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="px-2 py-1 text-sm border border-gray-300  rounded  "
           title="Align Center"
         >
           ↕
@@ -186,7 +186,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <button
           type="button"
           onClick={() => execCommand('justifyRight')}
-          className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="px-2 py-1 text-sm border border-gray-300  rounded  "
           title="Align Right"
         >
           →
@@ -212,7 +212,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             sel?.addRange(range);
           }
         }}
-        className="min-h-[200px] p-3 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        className="min-h-[200px] p-3 outline-none bg-white  text-gray-900 "
         style={{ minHeight: '300px' }}
         suppressContentEditableWarning={true}
         data-placeholder={placeholder}
